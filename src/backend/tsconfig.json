@@ -2,8 +2,14 @@
   "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    // rootDir must contain every input file, and ../shared is an input.
+    // Consequence: emitted output is dist/backend/src/*.js, hence the `start`
+    // script path. See src/shared/flight.ts for why the types live outside.
+    "rootDir": "..",
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    }
   },
-  "include": ["src"],
+  "include": ["src", "../shared"],
   "exclude": ["dist"]
 }
