@@ -35,7 +35,7 @@ export type AircraftTuple = [
   trackDeg: number,
   vertRateMs: number,
   onGround: 0 | 1,
-  lastContactMs: number,
+  posTimeMs: number,
   country: string,
 ];
 
@@ -55,8 +55,15 @@ export interface Aircraft {
   /** Vertical rate, metres/second. Positive is climbing. */
   vertRateMs: number;
   onGround: boolean;
-  /** Epoch milliseconds. The clock dead reckoning projects forward from. */
-  lastContactMs: number;
+  /**
+   * Epoch milliseconds. The clock dead reckoning projects forward from.
+   *
+   * This is OpenSky `time_position` (index 3) — when the *position* was last
+   * updated — falling back to `last_contact` (index 4) when it is null.
+   * Not `last_contact` itself: that is the last time any signal arrived, which
+   * is >= the position's own timestamp, and using it under-projects aircraft.
+   */
+  posTimeMs: number;
   country: string;
 }
 

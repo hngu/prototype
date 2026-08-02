@@ -39,8 +39,9 @@ tiers legitimate), and search limited to callsign/flight number for v1.
 src/
   shared/          NEW  — types shared by both sides (no build step, plain .ts)
     flight.ts
-  backend/         NEW  — Fastify + TypeScript
+  backend/         EXISTS — Express 5 + TypeScript
     src/
+      config.ts         env config (node --env-file, no dotenv)
       openskyAuth.ts    OAuth2 token cache
       poller.ts         budget-aware polling loop
       store.ts          in-memory aircraft state + trails
@@ -48,7 +49,7 @@ src/
         stream.ts       GET /api/stream  (SSE)
         search.ts       GET /api/flights/search?q=
         aircraft.ts     GET /api/aircraft/:icao24
-      server.ts
+      index.ts
   frontend/        EXISTS — Vite + React 19 + React Compiler
     src/
       routes/WorldView.tsx      MapLibre globe
@@ -65,32 +66,55 @@ matching Vite `resolve.alias`. Keeps the wire format honest on both ends.
 
 ---
 
-## Phase 0 — Scaffolding
+## Phase 0 — Scaffolding — ✅ DONE (2026-08-02)
 
-- `src/backend/package.json`: `fastify`, `dotenv`; dev deps `tsx`, `typescript`,
-  `@types/node`. Scripts: `dev` = `tsx watch src/server.ts`, `build` = `tsc`.
-- `.env` at repo root (gitignored): `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET`.
-  **User action required:** register at opensky-network.org and create an API client.
-  Feeding data to OpenSky raises the daily budget from 4,000 to 8,000 credits.
-- `src/shared/flight.ts`:
+Built and verified. Three things landed differently from the original plan; the reasons are
+recorded below because they constrain later phases.
 
-```ts
-// Wire format is a positional tuple, not an object — with ~12k aircraft in a
-// snapshot the key names alone would cost hundreds of KB.
-export type AircraftTuple = [
-  icao24: string, callsign: string, lat: number, lon: number,
-  altM: number, velocityMs: number, trackDeg: number, vertRateMs: number,
-  onGround: 0 | 1, lastContactMs: number, country: string,
-];
+**Express, not Fastify.** The backend was already scaffolded on Express 5. The hot path here
+is SSE — one long-lived response per client — which Express handles directly, and there is
+no throughput argument at ~1 request per client per session. Consequence for Phase 1:
+`request.raw.on('close')` becomes `req.on('close')`.
 
-export interface Aircraft { /* decoded, camelCase object form */ }
-export type StreamMessage =
-  | { type: 'snapshot'; t: number; aircraft: AircraftTuple[] }
-  | { type: 'delta';    t: number; changed: AircraftTuple[]; removed: string[] };
-```
+**No `dotenv`.** Node 24.9 is pinned in `.tool-versions`, so config uses the native
+`--env-file-if-exists=../../.env` flag in the `dev`/`start` scripts. `-if-exists` is
+deliberate: the server must boot and serve `/api/health` before credentials exist.
 
-- Frontend `vite.config.ts`: add `server.proxy` for `/api` -> `http://localhost:3001` so
-  dev is same-origin and SSE just works.
+**Backend `rootDir` is `..`, not `./src`.** A type-only import of `../shared` still raises
+TS6059 — verified, not assumed. `rootDir` therefore has to contain `shared/`, which moves
+emitted output to `dist/backend/src/index.js` (the `start` script matches).
+
+Also landed:
+
+- `src/shared/flight.ts` — `AircraftTuple`, `Aircraft`, `StreamMessage`, `HealthResponse`.
+  Types-only and must stay that way: the imports erase at compile time, so nothing needs to
+  resolve at runtime. Adding runtime code breaks the backend, where `node dist/...` does not
+  honour tsconfig paths. `src/shared/package.json` declares `"type": "module"` so `nodenext`
+  does not mis-detect the directory as CommonJS.
+- `@shared/*` alias wired in three places that must stay in agreement: backend `tsconfig.json`
+  `paths`, frontend `tsconfig.app.json` `paths` + `include`, and `vite.config.ts`
+  `resolve.alias`. The two packages resolve differently, so the specifier differs —
+  frontend `@shared/flight`, backend `@shared/flight.js`. Not unifiable without changing a
+  `moduleResolution`.
+- Vite `server.proxy` `/api` -> `http://localhost:3001`, plus `server.fs.allow: ['..']`
+  since `src/shared` sits outside the Vite root. Backend port is `PORT` in `.env`
+  (default 3001 in `config.ts`) and **must match the proxy target**, which is not read from
+  `.env`.
+- `GET /api/health` stub returning `HealthResponse` placeholders. Its job in Phase 0 was to
+  prove browser -> proxy -> Express works before any OpenSky code exists.
+- `vitest` installed in the frontend (`npm test`), ahead of the Phase 2 dead-reckoning tests.
+- `.env.example` committed; `.env` created and confirmed gitignored.
+
+*Verified:* type-check/build/lint clean in both packages; `/api/health` returns correct JSON
+both directly on :3001 and through the Vite proxy on :5173.
+
+**Still open — user action:** register at opensky-network.org, create an API client, and fill
+`OPENSKY_CLIENT_ID` / `OPENSKY_CLIENT_SECRET` in `.env`. Phase 1 cannot be verified against
+live data until this is done. Feeding data to OpenSky raises the daily budget from 4,000 to
+8,000 credits, which would allow `POLL_INTERVAL_MS` to drop to ~45000.
+
+**Not yet verified:** whether the Vite proxy buffers SSE frames. There is no SSE route until
+Phase 1 — test with `curl -N` through :5173, not just against :3001.
 
 ## Phase 1 — Backend: auth, poller, store, SSE
 
@@ -116,10 +140,52 @@ diff against what that client last received and write only changed + removed. Se
 comment heartbeat every 20s so proxies don't reap idle connections. Clean up the listener
 on `request.raw.on('close')`.
 
-*Field mapping from the OpenSky state vector (positional array):* `0` icao24, `1` callsign,
-`5` lon, `6` lat, `7` baro_altitude (m), `8` on_ground, `9` velocity (m/s), `10` true_track
-(deg), `11` vertical_rate (m/s), `4` last_contact (s). Note **lon comes before lat** — the
-classic bug with this API.
+*Field mapping from the OpenSky state vector* (17 elements; verified against the REST docs
+2026-08-02):
+
+| Idx | Field | Unit | Null? | Use |
+|-----|-------|------|-------|-----|
+| 0 | `icao24` | hex | no | store key |
+| 1 | `callsign` | 8-char padded | yes | **must `.trim()`** |
+| 2 | `origin_country` | string | no | tuple `country` |
+| 3 | `time_position` | sec | yes | **dead-reckoning clock** |
+| 4 | `last_contact` | sec | no | fallback when 3 is null |
+| 5 | `longitude` | deg | yes | drop row if null |
+| 6 | `latitude` | deg | yes | drop row if null |
+| 7 | `baro_altitude` | m | yes | `altM` |
+| 8 | `on_ground` | bool | no | `onGround` |
+| 9 | `velocity` | m/s | yes | dead reckoning |
+| 10 | `true_track` | deg from N | yes | icon rotation + bearing |
+| 11 | `vertical_rate` | m/s | yes | altitude projection |
+
+Indices 12–17 (`sensors`, `geo_altitude`, `squawk`, `spi`, `position_source`, `category`)
+are unused. `category` requires `extended=1` anyway.
+
+Four traps:
+
+1. **lon (5) comes before lat (6)** while `AircraftTuple` is lat-then-lon — the decode *does*
+   swap. The classic bug with this API, and it fails silently.
+2. **Times are seconds; the tuple is milliseconds.** Multiply by 1000, or projection runs
+   ~1.7 billion seconds forward and every aircraft leaves the map.
+3. **Callsigns are space-padded to 8 chars and often null** — trim, or Phase 4 prefix search
+   silently misses.
+4. **Two distinct null cases.** Null lat/lon -> drop the row. Null velocity/track *with* a
+   valid position -> keep it, render at last known point, skip projection.
+
+*Project from `time_position` (3), not `last_contact` (4).* `last_contact` is the last time
+any signal arrived; `time_position` is the last time a *position* did, and it is the clock
+the held lat/lon actually belongs to. Using `last_contact` makes elapsed time look shorter
+than it is, so aircraft are drawn behind their true position — and the error is worst for
+aircraft with degraded position updates, i.e. over oceans, where it can least be afforded.
+`time_position` is nullable, hence the fallback:
+
+```ts
+const posTimeSec = state[3] ?? state[4];   // time_position, else last_contact
+```
+
+*Credit accounting:* every response carries `X-Rate-Limit-Remaining`, which is authoritative
+and accounts for anything else spending the budget. Track an internal counter too and expose
+both on `/api/health` — divergence means something is polling that we don't know about.
 
 *Verify:* `curl -N localhost:3001/api/stream | head -c 2000` shows a snapshot with ~8–12k
 aircraft, and `curl localhost:3001/api/health` shows a sane credit count.
@@ -133,7 +199,9 @@ the piece both views depend on, so it gets built and unit-verified first.
 // Great-circle forward projection. Do NOT use flat lat/lon + delta —
 // it visibly breaks at high latitudes, which is where a lot of traffic is.
 export function projectPosition(a: Aircraft, nowMs: number): Projected {
-  const dt = (nowMs - a.lastContactMs) / 1000;          // seconds
+  // posTimeMs is OpenSky time_position — the clock the held lat/lon belongs to,
+  // NOT last_contact. See the Phase 1 field mapping for why this matters.
+  const dt = (nowMs - a.posTimeMs) / 1000;              // seconds
   const d  = (a.velocityMs * dt) / EARTH_RADIUS_M;      // angular distance
   const brng = toRad(a.trackDeg);
   // ... standard destination-point formula ...
