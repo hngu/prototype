@@ -1,0 +1,6 @@
+packages:
+  - 'src/frontend'
+
+# Refuse dependency versions published less than 7 days ago (value is in minutes).
+# Inherited by every package in this workspace.
+minimumReleaseAge: 10080
