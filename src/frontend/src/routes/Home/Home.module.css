@@ -1,0 +1,36 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 220px;
+  border: 1px solid var(--mantine-color-black);
+  border-radius: var(--mantine-radius-md);
+  background-color: var(--mantine-color-blue-0);
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 150ms ease;
+}
+
+.card:hover {
+  transform: scale(1.03);
+}
+
+.title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--mantine-spacing-md);
+}
+
+.description {
+  height: 33.333%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: var(--mantine-color-white);
+  padding: var(--mantine-spacing-sm);
+}

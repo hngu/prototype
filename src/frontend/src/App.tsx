@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 // Import styles of packages that you've installed.
 // All packages except `@mantine/hooks` require styles imports
 import "@mantine/core/styles.css";
@@ -12,6 +13,7 @@ import "@mantine/spotlight/styles.css";
 import "@mantine/nprogress/styles.css";
 
 import { MantineProvider } from "@mantine/core";
+import { RouterProvider } from "./routes";
 
 // import reactLogo from './assets/react.svg'
 // import viteLogo from './assets/vite.svg'
@@ -19,7 +21,13 @@ import { MantineProvider } from "@mantine/core";
 // import './App.css'
 
 function App() {
-  return <MantineProvider>Hello</MantineProvider>;
+  return (
+    <StrictMode>
+      <MantineProvider>
+        <RouterProvider />
+      </MantineProvider>
+    </StrictMode>
+  );
 }
 
 export default App;
