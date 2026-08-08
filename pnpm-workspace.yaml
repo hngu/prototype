@@ -1,5 +1,13 @@
 packages:
   - 'src/frontend'
+  - 'src/elearning'
+
+# Narrow allowlist of packages permitted to run install scripts. Everything else
+# is blocked by default, which is the main defense against install-script worms.
+# esbuild: transitive dep of astro + vite; its postinstall links the platform
+# binary and it will not run without it. Audited: no advisories, SLSA provenance.
+allowBuilds:
+  esbuild: true
 
 # Refuse dependency versions published less than 7 days ago (value is in minutes).
 # Inherited by every package in this workspace.

@@ -1,0 +1,105 @@
+---
+import type { CourseSummary } from '../lib/courses.ts'
+import { formatDuration } from '../lib/courses.ts'
+import { LEVEL_LABELS } from '../lib/site.ts'
+
+interface Props {
+  summary: CourseSummary
+}
+
+const { summary } = Astro.props
+const { course, lessonCount, duration } = summary
+---
+
+<article class="card" style={`--accent: ${course.data.accent}`}>
+  <span class="card__chip" aria-hidden="true">{course.data.icon}</span>
+
+  <h3 class="card__title">
+    <a href={`/courses/${course.id}`}>
+      {course.data.title}
+      <span class="card__cover"></span>
+    </a>
+  </h3>
+
+  <p class="card__desc">{course.data.description}</p>
+
+  <p class="card__meta">
+    <span>{LEVEL_LABELS[course.data.level]}</span>
+    <span aria-hidden="true">·</span>
+    <span>{lessonCount} {lessonCount === 1 ? 'lesson' : 'lessons'}</span>
+    {
+      duration > 0 && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{formatDuration(duration)}</span>
+        </>
+      )
+    }
+  </p>
+</article>
+
+<style>
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1.35rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.85rem;
+    background: var(--color-raised);
+    /* No shadow. Hover raises the border and nothing else — the restraint is
+       what keeps a grid of these from looking busy. */
+    transition: border-color 0.14s ease;
+  }
+
+  .card:hover {
+    border-color: var(--accent, var(--color-brand-500));
+  }
+
+  .card__chip {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.55rem;
+    font-size: 1.05rem;
+    background: color-mix(in oklab, var(--accent, var(--color-brand-500)) 14%, transparent);
+    color: var(--accent, var(--color-brand-500));
+  }
+
+  .card__title {
+    font-size: var(--text-lg);
+    font-weight: 620;
+    letter-spacing: -0.015em;
+  }
+
+  .card__title a {
+    color: var(--color-content);
+    text-decoration: none;
+  }
+
+  /* Stretched link: the whole card is clickable, but the accessible name stays
+     just the title rather than the entire card contents. */
+  .card__cover {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  .card__desc {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+    margin-top: 0.2rem;
+  }
+</style>

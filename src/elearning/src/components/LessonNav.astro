@@ -1,0 +1,89 @@
+---
+import type { Lesson } from '../lib/courses.ts'
+import { lessonSlug } from '../lib/courses.ts'
+
+interface Props {
+  courseId: string
+  prev: Lesson | undefined
+  next: Lesson | undefined
+}
+
+const { courseId, prev, next } = Astro.props
+---
+
+{
+  (prev || next) && (
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      {prev ? (
+        <a class="lesson-nav__link" href={`/courses/${courseId}/${lessonSlug(prev)}`} rel="prev">
+          <span class="lesson-nav__dir">← Previous</span>
+          <span class="lesson-nav__title">{prev.data.title}</span>
+        </a>
+      ) : (
+        <span />
+      )}
+
+      {next && (
+        <a
+          class="lesson-nav__link lesson-nav__link--next"
+          href={`/courses/${courseId}/${lessonSlug(next)}`}
+          rel="next"
+        >
+          <span class="lesson-nav__dir">Next →</span>
+          <span class="lesson-nav__title">{next.data.title}</span>
+        </a>
+      )}
+    </nav>
+  )
+}
+
+<style>
+  .lesson-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 3rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--color-line);
+    max-width: var(--container-measure);
+  }
+
+  .lesson-nav__link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.9rem 1.05rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.65rem;
+    text-decoration: none;
+    transition: border-color 0.12s ease;
+  }
+  .lesson-nav__link:hover {
+    border-color: var(--color-brand-500);
+  }
+
+  .lesson-nav__link--next {
+    text-align: right;
+  }
+
+  .lesson-nav__dir {
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+    font-weight: 600;
+  }
+
+  .lesson-nav__title {
+    font-size: var(--text-sm);
+    font-weight: 560;
+    color: var(--color-content);
+  }
+
+  @media (max-width: 34rem) {
+    .lesson-nav {
+      grid-template-columns: 1fr;
+    }
+    .lesson-nav__link--next {
+      text-align: left;
+    }
+  }
+</style>

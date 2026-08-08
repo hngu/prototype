@@ -1,0 +1,219 @@
+---
+import type { MarkdownHeading } from 'astro'
+import BaseLayout from './BaseLayout.astro'
+import Toc from '../components/Toc.astro'
+import LessonNav from '../components/LessonNav.astro'
+import AdSlot from '../components/AdSlot.astro'
+import { formatDuration, lessonSlug, type Course, type Lesson } from '../lib/courses.ts'
+import '../styles/prose.css'
+import '../styles/quiz.css'
+
+interface Props {
+  course: Course
+  lesson: Lesson
+  lessons: Lesson[]
+  prev: Lesson | undefined
+  next: Lesson | undefined
+  headings: MarkdownHeading[]
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[] | undefined
+}
+
+const { course, lesson, lessons, prev, next, headings, jsonLd } = Astro.props
+const position = lessons.findIndex((l) => l.id === lesson.id) + 1
+---
+
+<BaseLayout
+  title={lesson.data.title}
+  description={lesson.data.summary}
+  type="article"
+  jsonLd={jsonLd}
+>
+  <div class="container-page lesson">
+    <div class="lesson__main">
+      <nav class="lesson__crumbs" aria-label="Breadcrumb">
+        <ol>
+          <li><a href="/courses">Courses</a></li>
+          <li><a href={`/courses/${course.id}`}>{course.data.title}</a></li>
+        </ol>
+      </nav>
+
+      <header class="lesson__header">
+        <p class="lesson__eyebrow">
+          Lesson {position} of {lessons.length} · {formatDuration(lesson.data.duration)}
+        </p>
+        <h1>{lesson.data.title}</h1>
+        <p class="lesson__summary">{lesson.data.summary}</p>
+      </header>
+
+      <article class="prose">
+        <slot />
+      </article>
+
+      <AdSlot placement="end" />
+
+      <LessonNav courseId={course.id} prev={prev} next={next} />
+    </div>
+
+    <aside class="lesson__rail">
+      <Toc headings={headings} />
+
+      <nav class="rail-lessons" aria-label="Course lessons">
+        <h2 class="rail-lessons__heading">In this course</h2>
+        <ol>
+          {
+            lessons.map((entry) => (
+              <li>
+                <a
+                  href={`/courses/${course.id}/${lessonSlug(entry)}`}
+                  aria-current={entry.id === lesson.id ? 'page' : undefined}
+                >
+                  {entry.data.title}
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+      </nav>
+
+      <AdSlot placement="sidebar" />
+    </aside>
+  </div>
+</BaseLayout>
+
+<script>
+  import '../scripts/quiz.ts'
+</script>
+
+<style>
+  .lesson {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3rem;
+    padding-block: 2.5rem 1rem;
+  }
+
+  /* Grid items default to min-width:auto, which stops a wide <pre> from ever
+     scrolling inside its own box — it stretches the column instead. */
+  .lesson__main {
+    min-width: 0;
+  }
+
+  @media (min-width: 64rem) {
+    .lesson {
+      grid-template-columns: minmax(0, 1fr) 15rem;
+      gap: 4rem;
+    }
+  }
+
+  .lesson__crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+  }
+  .lesson__crumbs li + li::before {
+    content: '/';
+    margin-inline-end: 0.4rem;
+    color: var(--color-line-strong);
+  }
+  .lesson__crumbs a {
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .lesson__crumbs a:hover {
+    color: var(--color-content);
+  }
+
+  .lesson__header {
+    margin-block: 1.25rem 2.5rem;
+    max-width: var(--container-measure);
+  }
+
+  .lesson__eyebrow {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 600;
+    color: var(--color-brand-500);
+  }
+
+  .lesson__header h1 {
+    margin-top: 0.6rem;
+    font-size: var(--text-3xl);
+    font-weight: 680;
+  }
+
+  .lesson__summary {
+    margin-top: 0.75rem;
+    font-size: var(--text-lg);
+    color: var(--color-muted);
+    line-height: 1.55;
+  }
+
+  .lesson__rail {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    .lesson__rail {
+      display: block;
+      position: sticky;
+      top: 5.25rem;
+      /* Grid items stretch by default, which makes a sticky child full-height
+         and effectively unstickable. */
+      align-self: start;
+      /* If the rail is taller than the viewport (long TOC, many lessons, an ad
+         slot), it scrolls within itself rather than clipping. */
+      max-height: calc(100vh - 6.5rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      /* Room for the focus ring on links against the scroll edge. */
+      padding-inline-end: 0.25rem;
+    }
+  }
+
+  .rail-lessons {
+    margin-top: 2rem;
+    font-size: var(--text-sm);
+  }
+
+  .rail-lessons__heading {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 650;
+    margin-bottom: 0.7rem;
+  }
+
+  .rail-lessons ol {
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+    counter-reset: lesson;
+  }
+
+  .rail-lessons li {
+    counter-increment: lesson;
+  }
+
+  .rail-lessons a {
+    display: block;
+    color: var(--color-muted);
+    text-decoration: none;
+    line-height: 1.4;
+  }
+  .rail-lessons a::before {
+    content: counter(lesson) '. ';
+    color: var(--color-line-strong);
+  }
+  .rail-lessons a:hover {
+    color: var(--color-content);
+  }
+  .rail-lessons a[aria-current='page'] {
+    color: var(--color-brand-500);
+    font-weight: 600;
+  }
+</style>

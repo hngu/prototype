@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Update the host here when the real domain is set in astro.config.mjs.
+Sitemap: https://codelane.example/sitemap-index.xml

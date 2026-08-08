@@ -1,0 +1,63 @@
+---
+import CourseCard from '../CourseCard.astro'
+import type { CourseSummary } from '../../lib/courses.ts'
+
+interface Props {
+  summaries: CourseSummary[]
+}
+
+const { summaries } = Astro.props
+---
+
+{
+  summaries.length > 0 && (
+    <section class="featured section" aria-labelledby="featured-heading">
+      <div class="container-page">
+        <div class="featured__head">
+          <h2 id="featured-heading">Start here</h2>
+          <a class="featured__all" href="/courses">
+            All courses →
+          </a>
+        </div>
+
+        <div class="featured__grid">
+          {summaries.map((summary) => (
+            <CourseCard summary={summary} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .featured__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .featured__head h2 {
+    font-size: var(--text-2xl);
+    font-weight: 660;
+  }
+
+  .featured__all {
+    font-size: var(--text-sm);
+    font-weight: 560;
+    color: var(--color-muted);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .featured__all:hover {
+    color: var(--color-content);
+  }
+
+  .featured__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: 1.25rem;
+  }
+</style>

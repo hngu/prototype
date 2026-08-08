@@ -1,0 +1,328 @@
+/* Quiz widget.
+   Real <input type=radio|checkbox> elements are visually hidden but kept in the
+   accessibility tree and the tab order, so arrow-key navigation, Space/Enter
+   activation and aria-checked all come free from the platform. The visible
+   control is .quiz__marker. */
+
+.quiz {
+  margin-block: 2rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--color-line);
+  border-radius: 0.85rem;
+  background: var(--color-raised);
+  max-width: var(--container-measure);
+}
+
+.quiz__fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+/* <legend> is the group's accessible name, so screen readers announce the
+   question when focus enters the first option. */
+.quiz__question {
+  padding: 0;
+  font-size: var(--text-lg);
+  font-weight: 620;
+  line-height: 1.4;
+  color: var(--color-content);
+}
+
+.quiz__question code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--color-sunken);
+  border-radius: 0.3rem;
+  padding: 0.1em 0.32em;
+}
+
+.quiz__prompt {
+  margin-block: 0.4rem 1rem;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+/* Lesson quizzes sit inside `.prose`, whose `.prose ul` / `.prose li + li` rules
+   outrank a bare `.quiz__choices` on specificity and would put a disc bullet
+   beside every option. These selectors are deliberately specific enough to win
+   in both contexts — inside prose on a lesson, and bare on the home page. */
+.quiz ul.quiz__choices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.quiz .quiz__item + .quiz__item {
+  margin-block-start: 0;
+}
+
+.quiz .quiz__item::marker {
+  content: none;
+}
+
+.quiz__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.55rem;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.quiz__choice:hover {
+  border-color: var(--color-line-strong);
+  background: var(--color-sunken);
+}
+
+/* Visually hidden, still focusable and still announced. */
+.quiz__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.quiz__marker {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.15rem;
+  border: 1.5px solid var(--color-line-strong);
+  background: var(--color-surface);
+  display: grid;
+  place-items: center;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.quiz--multi .quiz__marker {
+  border-radius: 0.3rem;
+}
+.quiz--single .quiz__marker,
+.quiz--true-false .quiz__marker {
+  border-radius: 50%;
+}
+
+.quiz__marker::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: inherit;
+  background: #fff;
+  transform: scale(0);
+  transition: transform 0.12s ease;
+}
+
+.quiz__input:checked + .quiz__marker {
+  border-color: var(--color-brand-500);
+  background: var(--color-brand-500);
+}
+.quiz__input:checked + .quiz__marker::after {
+  transform: scale(1);
+}
+
+/* Focus ring is drawn on the visible marker, since the input itself is clipped. */
+.quiz__input:focus-visible + .quiz__marker {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+.quiz__text {
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.quiz__text code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--color-sunken);
+  border: 1px solid var(--color-line);
+  border-radius: 0.3rem;
+  padding: 0.1em 0.32em;
+}
+
+/* Choice text is frequently a whole code snippet; it must be able to wrap. */
+.quiz__question,
+.quiz__text,
+.quiz__explain {
+  overflow-wrap: anywhere;
+}
+
+/* True/false renders as two side-by-side buttons — but they are still radios,
+   so the group keeps its single-choice semantics and its accessible name. */
+.quiz--true-false ul.quiz__choices {
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.quiz--true-false .quiz__choice {
+  justify-content: center;
+  padding-block: 0.85rem;
+  font-weight: 560;
+}
+/* No radio dot in the true/false variant — the whole button shows the state.
+   That means the selected and focus styles below must be reinstated on the
+   label, since .quiz__marker normally carries both. */
+.quiz--true-false .quiz__marker {
+  display: none;
+}
+
+/* Selection feedback while the quiz is still unanswered. Scoped with
+   :not([data-state]) so that once graded, the pass/fail colours below take
+   over instead of a selected option staying brand-blue. */
+.quiz:not([data-state]) .quiz__choice:has(.quiz__input:checked) {
+  border-color: var(--color-brand-500);
+}
+
+.quiz--true-false:not([data-state]) .quiz__choice:has(.quiz__input:checked) {
+  background: color-mix(in oklab, var(--color-brand-500) 12%, transparent);
+  color: var(--color-brand-500);
+}
+
+/* The focus ring normally lives on .quiz__marker, which true/false hides, so
+   keyboard focus would otherwise be invisible here. */
+.quiz--true-false .quiz__choice:has(.quiz__input:focus-visible) {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+/* ── Graded states ──────────────────────────────────────────────────────── */
+
+.quiz__item[data-state='correct'] .quiz__choice {
+  border-color: var(--color-pass);
+  background: var(--color-pass-soft);
+}
+.quiz__item[data-state='incorrect'] .quiz__choice {
+  border-color: var(--color-fail);
+  background: var(--color-fail-soft);
+}
+/* Correct but not selected — only reachable in multi-select. */
+.quiz__item[data-state='missed'] .quiz__choice {
+  border-color: var(--color-pass);
+  border-style: dashed;
+}
+
+.quiz__item[data-state='correct'] .quiz__input:checked + .quiz__marker {
+  border-color: var(--color-pass);
+  background: var(--color-pass);
+}
+.quiz__item[data-state='incorrect'] .quiz__input:checked + .quiz__marker {
+  border-color: var(--color-fail);
+  background: var(--color-fail);
+}
+
+/* Once graded, the choices stop responding to hover so the result reads as settled. */
+.quiz[data-state] .quiz__choice {
+  cursor: default;
+}
+.quiz[data-state] .quiz__choice:hover {
+  border-color: inherit;
+  background: inherit;
+}
+
+/* ── Actions & result ───────────────────────────────────────────────────── */
+
+.quiz__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
+.quiz__check,
+.quiz__reset {
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.quiz__check {
+  background: var(--color-brand-500);
+  color: #fff;
+}
+.quiz__check:hover {
+  background: var(--color-brand-600);
+}
+
+.quiz__reset {
+  background: transparent;
+  border-color: var(--color-line-strong);
+  color: var(--color-content);
+}
+.quiz__reset:hover {
+  border-color: var(--color-content);
+}
+
+/* The live region is always in the DOM; :empty hides it until it has something
+   to say. Never toggle the `hidden` attribute here. */
+.quiz__result {
+  display: block;
+  margin-top: 0.9rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.quiz__result:empty {
+  display: none;
+}
+
+.quiz[data-state='correct'] .quiz__result {
+  color: var(--color-pass);
+}
+.quiz[data-state='incorrect'] .quiz__result {
+  color: var(--color-fail);
+}
+.quiz[data-state='empty'] .quiz__result {
+  color: var(--color-muted);
+}
+
+.quiz__explain {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.55rem;
+  background: var(--color-sunken);
+  border: 1px solid var(--color-line);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--color-content);
+}
+
+.quiz__explain code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--color-raised);
+  border: 1px solid var(--color-line);
+  border-radius: 0.3rem;
+  padding: 0.1em 0.32em;
+}
+
+.quiz__noscript {
+  margin-top: 1rem;
+  font-size: var(--text-sm);
+}
+.quiz__noscript summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-brand-500);
+}

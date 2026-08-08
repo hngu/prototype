@@ -1,0 +1,196 @@
+---
+import { Code } from 'astro:components'
+
+interface Props {
+  firstLessonHref: string | undefined
+}
+
+const { firstLessonHref } = Astro.props
+
+const sample = `const name = 'ada'   // "ada"  — literal
+let  count = 5       // number  — widened
+
+// A const can never be reassigned, so
+// TypeScript keeps the narrowest type.`
+---
+
+<section class="hero">
+  <div class="container-page hero__inner">
+    <div class="hero__copy">
+      <p class="hero__eyebrow">Free · open · no account</p>
+
+      <h1 class="hero__title">Learn the language, not the syntax list.</h1>
+
+      <p class="hero__lede">
+        Short lessons on programming languages and technologies that explain the mental model
+        first. Every one ends with a question, so you find out whether it actually landed.
+      </p>
+
+      <div class="hero__actions">
+        <a class="hero__cta" href={firstLessonHref ?? '/courses'}>Start a lesson</a>
+        <a class="hero__link" href="/courses">Browse all courses →</a>
+      </div>
+    </div>
+
+    <div class="hero__art" aria-hidden="true">
+      <div class="snippet">
+        <div class="snippet__bar">
+          <span></span><span></span><span></span>
+          <p class="snippet__file">inference.ts</p>
+        </div>
+        <Code
+          code={sample}
+          lang="ts"
+          themes={{ light: 'github-light', dark: 'github-dark-default' }}
+          defaultColor={false}
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    border-bottom: 1px solid var(--color-line);
+    /* A faint dot grid instead of a gradient. It reads as texture rather than
+       decoration, and it disappears at a glance — which is the point. */
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in oklab, var(--color-content) 9%, transparent) 1px,
+      transparent 0
+    );
+    background-size: 22px 22px;
+  }
+
+  .hero__inner {
+    display: grid;
+    gap: 3rem;
+    padding-block: clamp(3.5rem, 8vw, 6.5rem);
+    align-items: center;
+  }
+
+  @media (min-width: 62rem) {
+    .hero__inner {
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 4rem;
+    }
+  }
+
+  /* Left-aligned on purpose. A centred headline over a centred subhead over a
+     centred button row is the house style of generated marketing pages. */
+  .hero__copy {
+    max-width: 34ch;
+  }
+
+  .hero__eyebrow {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-weight: 620;
+    color: var(--color-brand-500);
+  }
+
+  .hero__title {
+    margin-top: 1rem;
+    font-size: var(--text-5xl);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+  }
+
+  .hero__lede {
+    margin-top: 1.25rem;
+    max-width: 46ch;
+    font-size: var(--text-lg);
+    line-height: 1.6;
+    color: var(--color-muted);
+  }
+
+  .hero__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 2.25rem;
+  }
+
+  .hero__cta {
+    padding: 0.8rem 1.5rem;
+    border-radius: 0.6rem;
+    background: var(--color-brand-500);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: 620;
+    text-decoration: none;
+    transition: background-color 0.12s ease;
+  }
+  .hero__cta:hover {
+    background: var(--color-brand-600);
+  }
+
+  .hero__link {
+    font-size: var(--text-sm);
+    font-weight: 560;
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .hero__link:hover {
+    color: var(--color-content);
+  }
+
+  /* Show the thing, don't describe it. */
+  .snippet {
+    border: 1px solid var(--color-line);
+    border-radius: 0.8rem;
+    overflow: hidden;
+    background: var(--color-raised);
+  }
+
+  .snippet__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-sunken);
+  }
+  .snippet__bar span {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--color-line-strong);
+  }
+  .snippet__file {
+    margin-inline-start: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+  }
+
+  .snippet :global(pre) {
+    margin: 0;
+    padding: 1.1rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--shiki-light);
+    background-color: var(--shiki-light-bg) !important;
+  }
+  .snippet :global(pre span) {
+    color: var(--shiki-light);
+  }
+
+  :global([data-theme='dark']) .snippet :global(pre) {
+    color: var(--shiki-dark);
+    background-color: var(--shiki-dark-bg) !important;
+  }
+  :global([data-theme='dark']) .snippet :global(pre span) {
+    color: var(--shiki-dark);
+  }
+
+  @media (max-width: 62rem) {
+    .hero__art {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,92 @@
+---
+import { SITE_TITLE, NAV_LINKS } from '../lib/site.ts'
+import ThemeToggle from './ThemeToggle.astro'
+
+const path = Astro.url.pathname
+const isActive = (href: string) => path === href || path.startsWith(`${href}/`)
+---
+
+<header class="header">
+  <div class="container-page header__inner">
+    <a class="header__brand" href="/">
+      <span class="header__mark" aria-hidden="true"></span>
+      {SITE_TITLE}
+    </a>
+
+    <nav class="header__nav" aria-label="Main">
+      {
+        NAV_LINKS.map((link) => (
+          <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined}>
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <ThemeToggle />
+  </div>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in oklab, var(--color-surface) 85%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .header__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: 3.75rem;
+  }
+
+  .header__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 650;
+    font-size: var(--text-base);
+    letter-spacing: -0.02em;
+    color: var(--color-content);
+    text-decoration: none;
+    margin-inline-end: auto;
+  }
+
+  /* The one place the accent appears in the chrome. */
+  .header__mark {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 0.3rem;
+    background: var(--color-brand-500);
+  }
+
+  .header__nav {
+    display: flex;
+    gap: 1.25rem;
+    font-size: var(--text-sm);
+  }
+
+  .header__nav a {
+    color: var(--color-muted);
+    text-decoration: none;
+    font-weight: 520;
+    transition: color 0.12s ease;
+  }
+  .header__nav a:hover,
+  .header__nav a[aria-current='page'] {
+    color: var(--color-content);
+  }
+
+  @media (max-width: 30rem) {
+    .header__inner {
+      gap: 1rem;
+    }
+    .header__nav {
+      gap: 0.9rem;
+    }
+  }
+</style>

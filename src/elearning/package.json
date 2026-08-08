@@ -1,0 +1,29 @@
+{
+  "name": "elearning",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "sync": "astro sync",
+    "lint": "oxlint",
+    "og": "node scripts/make-og.mjs"
+  },
+  "dependencies": {
+    "@astrojs/markdown-satteri": "0.3.5",
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^7.1.6"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@tailwindcss/vite": "^4.3.3",
+    "marked": "^18.0.7",
+    "oxlint": "^1.71.0",
+    "satteri": "^0.9.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2"
+  }
+}

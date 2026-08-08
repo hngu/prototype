@@ -1,0 +1,49 @@
+---
+interface Props {
+  href: string | undefined
+}
+
+const { href } = Astro.props
+---
+
+<section class="cta">
+  <div class="container-page cta__inner">
+    <h2>Pick something and start reading.</h2>
+    <a class="cta__button" href={href ?? '/courses'}>Browse courses</a>
+  </div>
+</section>
+
+<style>
+  .cta {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .cta__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-block: clamp(3rem, 6vw, 4.5rem);
+  }
+
+  .cta h2 {
+    font-size: var(--text-2xl);
+    font-weight: 660;
+    max-width: 20ch;
+  }
+
+  .cta__button {
+    padding: 0.8rem 1.5rem;
+    border-radius: 0.6rem;
+    background: var(--color-brand-500);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: 620;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .cta__button:hover {
+    background: var(--color-brand-600);
+  }
+</style>

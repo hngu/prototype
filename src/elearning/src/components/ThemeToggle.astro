@@ -1,0 +1,86 @@
+---
+/** Theme switch. Reflects state via aria-pressed and swaps icons with CSS. */
+---
+
+<button
+  type="button"
+  class="theme-toggle"
+  data-theme-toggle
+  aria-label="Switch between light and dark theme"
+>
+  <svg class="theme-toggle__sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.7"></circle>
+    <path
+      d="M12 2.5v2.2M12 19.3v2.2M4.2 12H2M22 12h-2.2M5.6 5.6 4.1 4.1M19.9 19.9l-1.5-1.5M18.4 5.6l1.5-1.5M4.1 19.9l1.5-1.5"
+      stroke="currentColor"
+      stroke-width="1.7"
+      stroke-linecap="round"></path>
+  </svg>
+  <svg class="theme-toggle__moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <path
+      d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2Z"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.7"
+      stroke-linejoin="round"></path>
+  </svg>
+</button>
+
+<style>
+  .theme-toggle {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-line);
+    background: transparent;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition:
+      color 0.12s ease,
+      border-color 0.12s ease;
+  }
+  .theme-toggle:hover {
+    color: var(--color-content);
+    border-color: var(--color-line-strong);
+  }
+  .theme-toggle > svg {
+    grid-area: 1 / 1;
+  }
+
+  /* Show the icon for the theme you'd switch TO. */
+  .theme-toggle__moon {
+    display: none;
+  }
+  :global([data-theme='dark']) .theme-toggle__sun {
+    display: none;
+  }
+  :global([data-theme='dark']) .theme-toggle__moon {
+    display: block;
+  }
+</style>
+
+<script>
+  const apply = (theme: string) => {
+    document.documentElement.dataset['theme'] = theme
+    try {
+      localStorage.setItem('theme', theme)
+    } catch {
+      /* private mode — the toggle still works for this page view */
+    }
+  }
+
+  const bind = () => {
+    for (const button of document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]')) {
+      if (button.dataset['bound'] === 'true') continue
+      button.dataset['bound'] = 'true'
+      button.addEventListener('click', () => {
+        apply(document.documentElement.dataset['theme'] === 'dark' ? 'light' : 'dark')
+      })
+    }
+  }
+
+  bind()
+  document.addEventListener('astro:page-load', bind)
+</script>

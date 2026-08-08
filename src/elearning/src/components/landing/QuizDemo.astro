@@ -1,0 +1,79 @@
+---
+import { parseQuizBlock } from '../../plugins/quiz-parse.ts'
+import { renderQuiz } from '../../plugins/quiz-render.ts'
+
+/**
+ * A real, answerable quiz on the home page.
+ *
+ * It goes through the exact same parse → render path a lesson does, so the demo
+ * can never drift from what the site actually produces. If the block below were
+ * ever malformed, the build would fail here just as it would in a lesson.
+ */
+const source = `id: demo-homepage-widening
+q: Which of these keeps \`mode\` typed as \`"dark"\` rather than \`string\`?
+- [ ] \`const config = { mode: 'dark' }\`
+- [x] \`const config = { mode: 'dark' } as const\`
+- [ ] \`let config = { mode: 'dark' }\`
+explain: Object properties stay mutable even on a \`const\` binding, so a plain object literal widens \`mode\` to \`string\`. Adding \`as const\` pins the literal type — and makes the properties readonly at the same time.`
+
+const parsed = parseQuizBlock(source)
+if (!parsed.ok) {
+  throw new Error(
+    `Home page demo quiz is invalid:\n${parsed.issues.map((i) => `  line ${i.lineOffset}: ${i.message}`).join('\n')}`,
+  )
+}
+const html = renderQuiz(parsed.block)
+---
+
+<section class="demo section" aria-labelledby="demo-heading">
+  <div class="container-page demo__inner">
+    <div class="demo__copy">
+      <h2 id="demo-heading">Every lesson ends with one of these.</h2>
+      <p>
+        Not a graded test — a checkpoint. Answer it, and you get the reasoning whether you were
+        right or not. Try this one; it is taken straight from the first TypeScript lesson.
+      </p>
+    </div>
+
+    <div class="demo__quiz" set:html={html} />
+  </div>
+</section>
+
+<style>
+  .demo {
+    border-block: 1px solid var(--color-line);
+    background: var(--color-sunken);
+  }
+
+  .demo__inner {
+    display: grid;
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  @media (min-width: 62rem) {
+    .demo__inner {
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 4rem;
+    }
+  }
+
+  .demo__copy h2 {
+    font-size: var(--text-2xl);
+    font-weight: 660;
+    max-width: 18ch;
+  }
+
+  .demo__copy p {
+    margin-top: 1rem;
+    font-size: var(--text-base);
+    line-height: 1.7;
+    color: var(--color-muted);
+    max-width: 44ch;
+  }
+
+  /* The quiz styles itself; just stop it adding its own outer margin here. */
+  .demo__quiz :global(.quiz) {
+    margin-block: 0;
+  }
+</style>

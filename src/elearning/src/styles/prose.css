@@ -1,0 +1,179 @@
+/* Hand-rolled lesson typography.
+   Deliberately not @tailwindcss/typography: it fights Shiki's <pre> styling and
+   ships a pile of opinions that cost more to override than this file costs to
+   write. Everything below references role tokens, so dark mode is free. */
+
+.prose {
+  max-width: var(--container-measure);
+  font-size: var(--text-base);
+  line-height: 1.75;
+  color: var(--color-content);
+}
+
+.prose > * + * {
+  margin-block-start: 1.25em;
+}
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin-block-start: 2em;
+  margin-block-end: 0.6em;
+  scroll-margin-top: 5rem; /* clears the sticky header on anchor jumps */
+}
+
+.prose h2 {
+  font-size: var(--text-2xl);
+  font-weight: 650;
+}
+.prose h3 {
+  font-size: var(--text-xl);
+  font-weight: 620;
+}
+.prose h4 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+/* Heading anchors: the link is always in the DOM for keyboard/AT users,
+   revealed on hover or focus rather than being injected on hover. */
+.prose :is(h2, h3, h4) > a[href^='#'] {
+  color: var(--color-muted);
+  text-decoration: none;
+  opacity: 0;
+  margin-inline-start: 0.35em;
+  transition: opacity 0.12s ease;
+}
+.prose :is(h2, h3, h4):hover > a[href^='#'],
+.prose :is(h2, h3, h4) > a[href^='#']:focus-visible {
+  opacity: 1;
+}
+
+.prose a {
+  color: var(--color-brand-500);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+.prose a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.prose strong {
+  font-weight: 650;
+  color: var(--color-content);
+}
+
+.prose :is(ul, ol) {
+  padding-inline-start: 1.4em;
+}
+.prose ul {
+  list-style: disc;
+}
+.prose ol {
+  list-style: decimal;
+}
+.prose li + li {
+  margin-block-start: 0.4em;
+}
+.prose li::marker {
+  color: var(--color-muted);
+}
+
+.prose blockquote {
+  border-inline-start: 3px solid var(--color-brand-500);
+  padding-inline-start: 1.1em;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  margin-block: 2.5em;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.prose :is(th, td) {
+  border: 1px solid var(--color-line);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+.prose th {
+  background: var(--color-sunken);
+  font-weight: 620;
+}
+
+/* Wide content must scroll inside its own box — the page body never scrolls
+   horizontally. */
+.prose .table-wrap,
+.prose pre {
+  overflow-x: auto;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+/* ── Code ─────────────────────────────────────────────────────────────────
+   Shiki runs with `defaultColor: false`, so it emits --shiki-light and
+   --shiki-dark on every token instead of baking one theme in. We just pick.
+   No JS, no flash, no double render. */
+
+.prose :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--color-sunken);
+  border: 1px solid var(--color-line);
+  border-radius: 0.35rem;
+  padding: 0.12em 0.35em;
+  /* `nowrap` reads nicely for short tokens but makes a long inline snippet
+     ("const config = { mode: 'dark' } as const") push the whole page sideways
+     on a phone. `break-spaces` keeps the internal spacing while still allowing
+     a wrap, and `anywhere` lets an unbroken identifier break rather than
+     overflow. */
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+}
+
+.prose pre {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  padding: 1rem 1.1rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--color-line);
+  tab-size: 2;
+}
+
+.prose pre > code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+  white-space: pre;
+}
+
+.prose pre,
+.prose pre span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
+[data-theme='dark'] .prose pre,
+[data-theme='dark'] .prose pre span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+
+/* Only the <pre> itself paints a background; tokens stay transparent so the
+   block reads as one surface. */
+.prose pre span {
+  background-color: transparent;
+}

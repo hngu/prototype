@@ -1,0 +1,277 @@
+---
+import type { GetStaticPaths } from 'astro'
+import { render } from 'astro:content'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import {
+  getPublishedCourses,
+  getCourseLessons,
+  formatDuration,
+  lessonSlug,
+  totalDuration,
+  type Course,
+  type Lesson,
+} from '../../../lib/courses.ts'
+import { LEVEL_LABELS, SITE_TITLE } from '../../../lib/site.ts'
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const courses = await getPublishedCourses()
+  return Promise.all(
+    courses.map(async (course) => ({
+      params: { course: course.id },
+      props: { course, lessons: await getCourseLessons(course.id) },
+    })),
+  )
+}
+
+interface Props {
+  course: Course
+  lessons: Lesson[]
+}
+
+const { course, lessons } = Astro.props
+const { Content } = await render(course)
+const duration = totalDuration(lessons)
+const firstLesson = lessons[0]
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: course.data.title,
+    description: course.data.description,
+    url: new URL(`/courses/${course.id}`, Astro.site).href,
+    provider: { '@type': 'Organization', name: SITE_TITLE },
+    isAccessibleForFree: true,
+    educationalLevel: LEVEL_LABELS[course.data.level],
+    keywords: course.data.tags.join(', '),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Courses',
+        item: new URL('/courses', Astro.site).href,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: course.data.title,
+        item: new URL(`/courses/${course.id}`, Astro.site).href,
+      },
+    ],
+  },
+]
+---
+
+<BaseLayout title={course.data.title} description={course.data.description} jsonLd={jsonLd}>
+  <div class="container-page section">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <ol><li><a href="/courses">Courses</a></li></ol>
+    </nav>
+
+    <header class="head" style={`--accent: ${course.data.accent}`}>
+      <span class="head__chip" aria-hidden="true">{course.data.icon}</span>
+      <h1>{course.data.title}</h1>
+      <p class="head__desc">{course.data.description}</p>
+      <p class="head__meta">
+        <span>{LEVEL_LABELS[course.data.level]}</span>
+        <span aria-hidden="true">·</span>
+        <span>{lessons.length} {lessons.length === 1 ? 'lesson' : 'lessons'}</span>
+        {
+          duration > 0 && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>{formatDuration(duration)}</span>
+            </>
+          )
+        }
+      </p>
+      {
+        firstLesson && (
+          <a class="head__cta" href={`/courses/${course.id}/${lessonSlug(firstLesson)}`}>
+            Start the course
+          </a>
+        )
+      }
+    </header>
+
+    <div class="body">
+      <div class="prose intro">
+        <Content />
+      </div>
+
+      <section class="syllabus" aria-labelledby="syllabus-heading">
+        <h2 id="syllabus-heading">Lessons</h2>
+        {
+          lessons.length > 0 ? (
+            <ol class="syllabus__list">
+              {lessons.map((lesson, index) => (
+                <li>
+                  <a href={`/courses/${course.id}/${lessonSlug(lesson)}`}>
+                    <span class="syllabus__num">{String(index + 1).padStart(2, '0')}</span>
+                    <span class="syllabus__body">
+                      <span class="syllabus__title">{lesson.data.title}</span>
+                      <span class="syllabus__summary">{lesson.data.summary}</span>
+                    </span>
+                    <span class="syllabus__time">{formatDuration(lesson.data.duration)}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p class="empty">Lessons for this course are still being written.</p>
+          )
+        }
+      </section>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .crumbs ol {
+    list-style: none;
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+  }
+  .crumbs a {
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .crumbs a:hover {
+    color: var(--color-content);
+  }
+
+  .head {
+    max-width: var(--container-measure);
+    margin-block: 1.25rem 3rem;
+  }
+
+  .head__chip {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.65rem;
+    font-weight: 650;
+    background: color-mix(in oklab, var(--accent) 14%, transparent);
+    color: var(--accent);
+    margin-bottom: 1.1rem;
+  }
+
+  .head h1 {
+    font-size: var(--text-4xl);
+    font-weight: 680;
+  }
+
+  .head__desc {
+    margin-top: 0.9rem;
+    font-size: var(--text-lg);
+    color: var(--color-muted);
+    line-height: 1.6;
+  }
+
+  .head__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1rem;
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+  }
+
+  .head__cta {
+    display: inline-block;
+    margin-top: 1.75rem;
+    padding: 0.7rem 1.35rem;
+    border-radius: 0.55rem;
+    background: var(--color-brand-500);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: 620;
+    text-decoration: none;
+  }
+  .head__cta:hover {
+    background: var(--color-brand-600);
+  }
+
+  .intro {
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .syllabus {
+    margin-top: 2.5rem;
+    max-width: var(--container-measure);
+  }
+
+  .syllabus h2 {
+    font-size: var(--text-xl);
+    font-weight: 650;
+    margin-bottom: 1.25rem;
+  }
+
+  .syllabus__list {
+    list-style: none;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .syllabus__list a {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.7rem;
+    text-decoration: none;
+    transition: border-color 0.12s ease;
+  }
+  .syllabus__list a:hover {
+    border-color: var(--color-brand-500);
+  }
+
+  .syllabus__num {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-line-strong);
+  }
+
+  .syllabus__body {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .syllabus__title {
+    font-weight: 600;
+    color: var(--color-content);
+  }
+
+  .syllabus__summary {
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+    line-height: 1.55;
+  }
+
+  .syllabus__time {
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+    white-space: nowrap;
+  }
+
+  .empty {
+    color: var(--color-muted);
+  }
+
+  @media (max-width: 34rem) {
+    .syllabus__list a {
+      grid-template-columns: auto 1fr;
+    }
+    .syllabus__time {
+      display: none;
+    }
+  }
+</style>

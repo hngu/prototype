@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import Hero from '../components/landing/Hero.astro'
+import ValueProps from '../components/landing/ValueProps.astro'
+import FeaturedCourses from '../components/landing/FeaturedCourses.astro'
+import HowItWorks from '../components/landing/HowItWorks.astro'
+import QuizDemo from '../components/landing/QuizDemo.astro'
+import Cta from '../components/landing/Cta.astro'
+import { getCourseSummaries, lessonSlug } from '../lib/courses.ts'
+import { SITE_TITLE, SITE_DESCRIPTION } from '../lib/site.ts'
+import '../styles/quiz.css'
+
+const summaries = await getCourseSummaries()
+const featured = summaries.slice(0, 3)
+
+// Deep-link the primary CTA at the first lesson of the first course, so the
+// hero button lands somewhere useful rather than on another index page.
+const first = summaries[0]
+const firstLesson = first?.lessons[0]
+const firstLessonHref =
+  first && firstLesson ? `/courses/${first.course.id}/${lessonSlug(firstLesson)}` : undefined
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  url: Astro.site?.href,
+}
+---
+
+<BaseLayout jsonLd={jsonLd}>
+  <Hero firstLessonHref={firstLessonHref} />
+  <ValueProps />
+  <FeaturedCourses summaries={featured} />
+  <QuizDemo />
+  <HowItWorks />
+  <Cta href={firstLessonHref} />
+</BaseLayout>
+
+<script>
+  // The home page carries a live quiz, so it needs the same enhancement script
+  // the lessons use.
+  import '../scripts/quiz.ts'
+</script>

@@ -1,0 +1,76 @@
+---
+const props = [
+  {
+    title: 'Free and open',
+    body: 'No account, no paywall, no upsell at lesson three. Everything is public and stays that way.',
+    path: 'M12 3.2 3.6 7.4v5c0 4.6 3.4 8 8.4 9.4 5-1.4 8.4-4.8 8.4-9.4v-5Z',
+  },
+  {
+    title: 'Learn by doing',
+    body: 'Every lesson ends with a question you answer in the page. Immediate feedback, with the reasoning.',
+    path: 'M9 12.6l2.3 2.3L15.8 10M4.5 4.5h15v15h-15z',
+  },
+  {
+    title: 'Built to be read',
+    body: 'Short pages, real code, and an explanation of why — not a reference manual split into slides.',
+    path: 'M4 5.5h7a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H4Zm16 0h-7A2.5 2.5 0 0 0 10.5 8v11a2 2 0 0 1 2-2H20Z',
+  },
+]
+---
+
+<section class="values section">
+  <div class="container-page values__grid">
+    {
+      props.map((prop) => (
+        <div class="value">
+          {/* currentColor, not the accent — these are structure, not emphasis. */}
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path
+              d={prop.path}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <h2>{prop.title}</h2>
+          <p>{prop.body}</p>
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  /* No cards, no borders, no shadows — whitespace does the separating. */
+  .values__grid {
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 48rem) {
+    .values__grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem;
+    }
+  }
+
+  .value svg {
+    color: var(--color-muted);
+  }
+
+  .value h2 {
+    margin-top: 0.9rem;
+    font-size: var(--text-base);
+    font-weight: 640;
+  }
+
+  .value p {
+    margin-top: 0.5rem;
+    font-size: var(--text-sm);
+    line-height: 1.65;
+    color: var(--color-muted);
+    max-width: 38ch;
+  }
+</style>

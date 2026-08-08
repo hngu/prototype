@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { SITE_TITLE } from '../lib/site.ts'
+import '../styles/prose.css'
+---
+
+<BaseLayout
+  title="About"
+  description={`What ${SITE_TITLE} is, who it is for, and how the lessons are put together.`}
+>
+  <div class="container-page section">
+    <h1 class="page-title">About</h1>
+
+    <div class="prose">
+      <p>
+        {SITE_TITLE} is a free, public collection of lessons on programming languages and
+        technologies. There is no account, no paywall and no upsell — every page is open to
+        anyone.
+      </p>
+
+      <h2>Why it exists</h2>
+      <p>
+        Most language documentation is written as reference material: complete, precisely worded,
+        and organised for people who already know what they are looking for. That is the right
+        shape for a manual and the wrong shape for learning. Tutorials often swing too far the
+        other way, walking through steps without ever explaining why any of it works.
+      </p>
+      <p>
+        These lessons aim at the middle. Each one takes a single idea, explains the model behind
+        it, shows the code, and then asks you a question about it.
+      </p>
+
+      <h2>How the lessons work</h2>
+      <p>
+        A lesson is a short read — usually well under ten minutes — built around one concept. Code
+        examples are real and runnable rather than illustrative pseudocode. At the end of each
+        section there is a question with immediate feedback and an explanation, whichever way you
+        answered.
+      </p>
+      <p>
+        The questions are checkpoints, not tests. Nothing is scored, nothing is tracked, and no
+        result leaves your browser. Because the checking happens in the page, the answers are
+        visible to anyone who opens developer tools — that is a deliberate trade. The goal is
+        helping you learn, not preventing you from cheating at something with no stakes.
+      </p>
+
+      <h2>Corrections</h2>
+      <p>
+        If a lesson is wrong, unclear, or out of date, that is worth fixing — see the <a
+          href="/contact">contact page</a
+        >.
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-title {
+    font-size: var(--text-4xl);
+    font-weight: 680;
+    margin-bottom: 2rem;
+  }
+</style>

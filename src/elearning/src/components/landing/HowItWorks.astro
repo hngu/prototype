@@ -1,0 +1,88 @@
+---
+const steps = [
+  { title: 'Pick a course', body: 'Each one starts from the mental model, not the syntax table.' },
+  { title: 'Read the lesson', body: 'Eight minutes or so, with runnable examples and no filler.' },
+  { title: 'Check yourself', body: 'Answer the question at the end and see the reasoning either way.' },
+]
+---
+
+<section class="how section" aria-labelledby="how-heading">
+  <div class="container-page">
+    <h2 class="how__heading" id="how-heading">How it works</h2>
+
+    <ol class="how__steps">
+      {
+        steps.map((step, index) => (
+          <li class="step">
+            <span class="step__num" aria-hidden="true">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <h3>{step.title}</h3>
+            <p>{step.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .how__heading {
+    font-size: var(--text-2xl);
+    font-weight: 660;
+    margin-bottom: 2.5rem;
+  }
+
+  .how__steps {
+    list-style: none;
+    display: grid;
+    gap: 2.25rem;
+    counter-reset: step;
+  }
+
+  @media (min-width: 48rem) {
+    .how__steps {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+    }
+
+    /* Hairline connector between the numerals, which is what makes the row read
+       as a sequence rather than three unrelated columns. */
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 0.85rem;
+      left: 3rem;
+      right: -1.25rem;
+      height: 1px;
+      background: var(--color-line);
+    }
+  }
+
+  .step {
+    position: relative;
+  }
+
+  .step__num {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--color-line-strong);
+    line-height: 1;
+  }
+
+  .step h3 {
+    margin-top: 1rem;
+    font-size: var(--text-base);
+    font-weight: 640;
+  }
+
+  .step p {
+    margin-top: 0.45rem;
+    font-size: var(--text-sm);
+    line-height: 1.65;
+    color: var(--color-muted);
+    max-width: 34ch;
+  }
+</style>

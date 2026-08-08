@@ -1,0 +1,123 @@
+---
+import { SITE_TITLE } from '../lib/site.ts'
+
+const year = new Date().getFullYear()
+
+const columns = [
+  {
+    heading: 'Learn',
+    links: [
+      { href: '/courses', label: 'All courses' },
+      { href: '/about', label: 'How it works' },
+    ],
+  },
+  {
+    heading: 'Project',
+    links: [
+      { href: '/about', label: 'About' },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
+  {
+    heading: 'Legal',
+    links: [{ href: '/privacy', label: 'Privacy' }],
+  },
+]
+---
+
+<footer class="footer">
+  <div class="container-page footer__inner">
+    <div class="footer__brand">
+      <a class="footer__name" href="/">{SITE_TITLE}</a>
+      <p class="footer__note">Free and open programming lessons. No account, no paywall.</p>
+    </div>
+
+    {
+      columns.map((column) => (
+        <nav class="footer__col" aria-label={column.heading}>
+          <h2 class="footer__heading">{column.heading}</h2>
+          <ul>
+            {column.links.map((link) => (
+              <li>
+                <a href={link.href}>{link.label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ))
+    }
+  </div>
+
+  <div class="container-page footer__bar">
+    <p>© {year} {SITE_TITLE}. Content licensed under CC BY 4.0.</p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--color-line);
+    margin-top: var(--spacing-section);
+    padding-block: 3rem 1.5rem;
+    font-size: var(--text-sm);
+  }
+
+  .footer__inner {
+    display: grid;
+    grid-template-columns: 2fr repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  .footer__name {
+    font-weight: 650;
+    color: var(--color-content);
+    text-decoration: none;
+  }
+
+  .footer__note {
+    margin-top: 0.5rem;
+    color: var(--color-muted);
+    max-width: 28ch;
+  }
+
+  .footer__heading {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 650;
+    color: var(--color-content);
+    margin-bottom: 0.7rem;
+  }
+
+  .footer__col ul {
+    list-style: none;
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .footer__col a {
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .footer__col a:hover {
+    color: var(--color-content);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .footer__bar {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-line);
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+  }
+
+  @media (max-width: 48rem) {
+    .footer__inner {
+      grid-template-columns: 1fr 1fr;
+    }
+    .footer__brand {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

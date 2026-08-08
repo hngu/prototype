@@ -1,0 +1,81 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { SITE_TITLE, ADS_ENABLED } from '../lib/site.ts'
+import '../styles/prose.css'
+---
+
+<BaseLayout title="Privacy" description={`What ${SITE_TITLE} does and does not collect.`}>
+  <div class="container-page section">
+    <h1 class="page-title">Privacy</h1>
+
+    <div class="prose">
+      <!-- This page is a scaffold. Before applying to any ad network, replace the
+           placeholders and expand the advertising section to describe the network
+           you actually run — AdSense sets cookies and must disclose that; EthicalAds
+           does not set any. An ad network application will be rejected without a
+           privacy policy that matches reality. -->
+      <p class="note">
+        <strong>Draft.</strong> This policy needs completing before launch, and updating again if
+        advertising is switched on.
+      </p>
+
+      <h2>What is collected</h2>
+      <p>
+        {SITE_TITLE} is a static site. It has no accounts, no login, and no server that stores
+        anything you do. Quiz answers are evaluated entirely inside your browser and are never
+        transmitted anywhere.
+      </p>
+
+      <h2>Local storage</h2>
+      <p>
+        Your light/dark theme preference is saved in your browser's local storage so the site does
+        not flash the wrong theme on your next visit. It never leaves your device, and clearing
+        site data removes it.
+      </p>
+
+      <h2>Hosting</h2>
+      <p>
+        The site is served by a static hosting provider, which — like any web server — processes
+        request logs including IP address and user agent in order to deliver pages and mitigate
+        abuse.
+      </p>
+
+      <h2>Advertising</h2>
+      {
+        ADS_ENABLED ? (
+          <p>
+            Some pages carry advertising. Details of the network in use, what it collects, and
+            whether it sets cookies must be described here.
+          </p>
+        ) : (
+          <p>
+            There is currently no advertising on this site. If that changes, this section will
+            describe the network in use and what it collects.
+          </p>
+        )
+      }
+
+      <h2>Contact</h2>
+      <p>
+        Questions about this policy can go to the address on the <a href="/contact">contact page</a
+        >.
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-title {
+    font-size: var(--text-4xl);
+    font-weight: 680;
+    margin-bottom: 2rem;
+  }
+
+  .note {
+    padding: 0.85rem 1rem;
+    border-radius: 0.55rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-sunken);
+    font-size: var(--text-sm);
+  }
+</style>

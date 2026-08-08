@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { SITE_TITLE } from '../lib/site.ts'
+import '../styles/prose.css'
+---
+
+<BaseLayout title="Contact" description={`How to get in touch about ${SITE_TITLE}.`}>
+  <div class="container-page section">
+    <h1 class="page-title">Contact</h1>
+
+    <div class="prose">
+      <p>
+        Corrections, unclear explanations and broken examples are all worth reporting — a lesson
+        that teaches the wrong thing is worse than no lesson.
+      </p>
+
+      <!-- TODO before launch: replace with a real address or issue-tracker link.
+           An ad network application will be rejected without a working contact route. -->
+      <p>
+        <strong>Email:</strong>
+        <a href="mailto:hello@example.com">hello@example.com</a>
+      </p>
+
+      <p>
+        When reporting a problem with a lesson, including the page URL and the part that was wrong
+        makes it much faster to fix.
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-title {
+    font-size: var(--text-4xl);
+    font-weight: 680;
+    margin-bottom: 2rem;
+  }
+</style>

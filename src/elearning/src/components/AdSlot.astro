@@ -1,0 +1,85 @@
+---
+import { ADS_ENABLED } from '../lib/site.ts'
+
+/**
+ * Ad placement. Rendered ONLY from LessonLayout — never from BaseLayout — so
+ * the landing page, course index and about/legal pages structurally cannot
+ * carry an ad. See README for why that matters.
+ *
+ * When ADS_ENABLED is false this renders absolutely nothing: no placeholder, no
+ * reserved box, no network request. Dev and Lighthouse runs stay clean.
+ *
+ * When enabled, the slot reserves its exact height up front. Unreserved ad
+ * slots are the single biggest cause of Cumulative Layout Shift penalties, and
+ * CLS is a Core Web Vitals ranking signal — an ad that shifts the page costs
+ * more in search position than it earns.
+ */
+
+interface Props {
+  /**
+   * `sidebar` rides the sticky rail beside the lesson; `end` sits after the
+   * lesson content.
+   *
+   * Neither is injected mid-prose. Splitting rendered markdown to wedge an ad
+   * after the first heading means either parsing the output HTML or teaching
+   * the markdown pipeline about ads — both fragile, and both put an ad in the
+   * content flow where a late-loading creative is most likely to shift text.
+   * The rail is also where developer-focused networks expect to sit.
+   */
+  placement?: 'sidebar' | 'end'
+}
+
+const { placement = 'end' } = Astro.props
+---
+
+{
+  ADS_ENABLED && (
+    <aside class={`ad ad--${placement}`} aria-label="Advertisement">
+      <p class="ad__label">Advertisement</p>
+      {/* Replace this div with the network's embed. Keep the wrapper: it is what
+          reserves the space. EthicalAds uses a div with data-ea-publisher;
+          AdSense uses <ins class="adsbygoogle">. */}
+      <div class="ad__frame" data-ad-slot={placement} />
+    </aside>
+  )
+}
+
+<style>
+  .ad {
+    max-width: var(--container-measure);
+    margin-block: 2.5rem;
+  }
+
+  .ad--sidebar {
+    margin-block: 2rem 0;
+  }
+
+  .ad__label {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  /* Fixed reserved height → zero layout shift when the creative loads. */
+  .ad__frame {
+    min-height: 180px;
+    border: 1px dashed var(--color-line);
+    border-radius: 0.6rem;
+    background: var(--color-sunken);
+    display: grid;
+    place-items: center;
+  }
+
+  @media (min-width: 48rem) {
+    .ad--end .ad__frame {
+      min-height: 140px;
+    }
+  }
+
+  /* The rail creative is a tall rectangle; reserve for that shape instead. */
+  .ad--sidebar .ad__frame {
+    min-height: 260px;
+  }
+</style>

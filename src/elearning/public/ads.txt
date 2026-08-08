@@ -1,0 +1,9 @@
+# Authorized Digital Sellers — https://iabtechlab.com/ads-txt/
+#
+# Empty until an ad network is live. Serving an ads.txt with no authorized
+# sellers is correct and safe: it tells buyers that nobody is currently
+# authorized to sell inventory on this domain, which is exactly true.
+#
+# When AdSense is approved, replace this file with the single line:
+#   google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+# using your own publisher ID. EthicalAds will supply its own line.

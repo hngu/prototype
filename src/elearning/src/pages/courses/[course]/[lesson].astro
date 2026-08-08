@@ -1,0 +1,98 @@
+---
+import type { GetStaticPaths } from 'astro'
+import { render } from 'astro:content'
+import LessonLayout from '../../../layouts/LessonLayout.astro'
+import {
+  getPublishedCourses,
+  getCourseLessons,
+  getNeighbours,
+  lessonSlug,
+  type Course,
+  type Lesson,
+} from '../../../lib/courses.ts'
+import { SITE_TITLE } from '../../../lib/site.ts'
+
+/**
+ * One flat pass over every course × lesson. prev/next are resolved here rather
+ * than inside the page body: computing neighbours once during path generation
+ * beats re-querying the collection on every render.
+ */
+export const getStaticPaths: GetStaticPaths = async () => {
+  const courses = await getPublishedCourses()
+
+  const nested = await Promise.all(
+    courses.map(async (course) => {
+      const lessons = await getCourseLessons(course.id)
+      return lessons.map((lesson, index) => ({
+        params: { course: course.id, lesson: lessonSlug(lesson) },
+        props: { course, lesson, lessons, ...getNeighbours(lessons, index) },
+      }))
+    }),
+  )
+
+  return nested.flat()
+}
+
+interface Props {
+  course: Course
+  lesson: Lesson
+  lessons: Lesson[]
+  prev: Lesson | undefined
+  next: Lesson | undefined
+}
+
+const { course, lesson, lessons, prev, next } = Astro.props
+const { Content, headings } = await render(lesson)
+
+const lessonUrl = new URL(`/courses/${course.id}/${lessonSlug(lesson)}`, Astro.site).href
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'LearningResource',
+    name: lesson.data.title,
+    description: lesson.data.summary,
+    url: lessonUrl,
+    isAccessibleForFree: true,
+    learningResourceType: 'Lesson',
+    timeRequired: `PT${lesson.data.duration}M`,
+    isPartOf: {
+      '@type': 'Course',
+      name: course.data.title,
+      url: new URL(`/courses/${course.id}`, Astro.site).href,
+    },
+    provider: { '@type': 'Organization', name: SITE_TITLE },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Courses',
+        item: new URL('/courses', Astro.site).href,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: course.data.title,
+        item: new URL(`/courses/${course.id}`, Astro.site).href,
+      },
+      { '@type': 'ListItem', position: 3, name: lesson.data.title, item: lessonUrl },
+    ],
+  },
+]
+---
+
+<LessonLayout
+  course={course}
+  lesson={lesson}
+  lessons={lessons}
+  prev={prev}
+  next={next}
+  headings={headings}
+  jsonLd={jsonLd}
+>
+  <Content />
+</LessonLayout>

@@ -1,0 +1,183 @@
+@import 'tailwindcss';
+
+/* Theme is driven by a `data-theme` attribute on <html>, set before first paint
+   by ThemeScript.astro. Redefine Tailwind's `dark:` variant to match. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme {
+  /* ── Neutral ramp ────────────────────────────────────────────────────────
+     One hue (265) at low chroma. Keeping every grey on a single hue is what
+     stops them going muddy and makes light/dark read as one family rather
+     than two unrelated palettes. */
+  --color-ink-50: oklch(98.4% 0.002 265);
+  --color-ink-100: oklch(96.2% 0.004 265);
+  --color-ink-200: oklch(92% 0.006 265);
+  --color-ink-300: oklch(84.5% 0.008 265);
+  --color-ink-400: oklch(68% 0.012 265);
+  --color-ink-500: oklch(55.5% 0.014 265);
+  --color-ink-600: oklch(44% 0.014 265);
+  --color-ink-700: oklch(35% 0.013 265);
+  --color-ink-800: oklch(24.5% 0.011 265);
+  --color-ink-900: oklch(17.5% 0.009 265);
+  --color-ink-950: oklch(12.5% 0.008 265);
+
+  /* ── Brand ───────────────────────────────────────────────────────────────
+     One accent, used sparingly. Restraint is the design. */
+  --color-brand-400: oklch(72% 0.15 265);
+  --color-brand-500: oklch(62% 0.185 265);
+  --color-brand-600: oklch(54% 0.19 265);
+
+  /* ── Semantic feedback ───────────────────────────────────────────────────
+     Matched lightness so correct/incorrect carry equal visual weight and
+     neither shouts louder than the other. */
+  --color-pass: oklch(62% 0.15 150);
+  --color-pass-soft: oklch(95% 0.04 150);
+  --color-fail: oklch(62% 0.17 25);
+  --color-fail-soft: oklch(95.5% 0.03 25);
+
+  /* ── Role tokens ─────────────────────────────────────────────────────────
+     Components reference ONLY these, never a raw scale step. This is what
+     keeps dark mode from becoming a thousand `dark:` utilities — the roles
+     flip once, below, and everything follows. */
+  --color-surface: var(--color-ink-50);
+  --color-raised: #fff;
+  --color-sunken: var(--color-ink-100);
+  --color-line: var(--color-ink-200);
+  --color-line-strong: var(--color-ink-300);
+  --color-content: var(--color-ink-900);
+  --color-muted: var(--color-ink-500);
+
+  /* ── Type scale ──────────────────────────────────────────────────────────
+     Modular scale, ratio ~1.25 (major third): tight enough that body and
+     small stay distinguishable, wide enough that the hero reads as a hero.
+     Every step is clamped, so there are no breakpoint-driven type jumps. */
+  --text-xs: clamp(0.75rem, 0.73rem + 0.1vw, 0.8rem);
+  --text-sm: clamp(0.875rem, 0.85rem + 0.12vw, 0.94rem);
+  --text-base: clamp(1rem, 0.97rem + 0.16vw, 1.09rem);
+  --text-lg: clamp(1.125rem, 1.07rem + 0.28vw, 1.31rem);
+  --text-xl: clamp(1.35rem, 1.25rem + 0.45vw, 1.64rem);
+  --text-2xl: clamp(1.65rem, 1.47rem + 0.75vw, 2.05rem);
+  --text-3xl: clamp(2rem, 1.7rem + 1.25vw, 2.56rem);
+  --text-4xl: clamp(2.45rem, 1.95rem + 2.05vw, 3.2rem);
+  --text-5xl: clamp(3rem, 2.2rem + 3.3vw, 4rem);
+
+  /* System stack, deliberately. A webfont costs a render-blocking request and
+     a swap-in reflow — both punish LCP and CLS, which are the exact metrics
+     this static site is built to win. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Shared layout rhythm */
+  --spacing-section: clamp(4rem, 8vw, 7rem);
+  --container-measure: 72ch;
+  --container-page: 1120px;
+}
+
+/* Dark: flip the roles only. The scale above is untouched. */
+[data-theme='dark'] {
+  --color-surface: var(--color-ink-950);
+  --color-raised: var(--color-ink-900);
+  --color-sunken: oklch(10% 0.008 265);
+  --color-line: var(--color-ink-800);
+  --color-line-strong: var(--color-ink-700);
+  --color-content: var(--color-ink-100);
+  --color-muted: var(--color-ink-400);
+
+  --color-pass-soft: oklch(26% 0.05 150);
+  --color-fail-soft: oklch(26% 0.05 25);
+}
+
+/* `color-scheme` themes native scrollbars, form controls and browser chrome.
+   Omitting it is the usual reason a "dark" site still flashes white edges. */
+:root {
+  color-scheme: light;
+}
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-content);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--color-brand-500);
+    color: #fff;
+  }
+}
+
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: var(--container-page);
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 2rem);
+  }
+
+  .section {
+    padding-block: var(--spacing-section);
+  }
+
+  /* Skip link: visible only once focused. */
+  .skip-link {
+    position: absolute;
+    left: 0.5rem;
+    top: -100%;
+    z-index: 100;
+    padding: 0.6rem 1rem;
+    border-radius: 0.5rem;
+    background: var(--color-brand-500);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    transition: top 0.15s ease;
+  }
+  .skip-link:focus {
+    top: 0.5rem;
+  }
+}

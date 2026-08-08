@@ -1,0 +1,61 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import CourseCard from '../../components/CourseCard.astro'
+import { getCourseSummaries } from '../../lib/courses.ts'
+
+const summaries = await getCourseSummaries()
+---
+
+<BaseLayout
+  title="Courses"
+  description="Every course, free and open. Short lessons on programming languages and technologies, each ending with a quiz."
+>
+  <div class="container-page section">
+    <header class="page-head">
+      <h1>Courses</h1>
+      <p>
+        Every course is free, needs no account, and is built the same way: short lessons you can
+        finish in a sitting, each ending with a question that checks you actually got it.
+      </p>
+    </header>
+
+    {
+      summaries.length > 0 ? (
+        <div class="grid">
+          {summaries.map((summary) => (
+            <CourseCard summary={summary} />
+          ))}
+        </div>
+      ) : (
+        <p class="empty">No courses published yet — check back shortly.</p>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .page-head {
+    max-width: 55ch;
+    margin-bottom: 3rem;
+  }
+  .page-head h1 {
+    font-size: var(--text-4xl);
+    font-weight: 680;
+  }
+  .page-head p {
+    margin-top: 1rem;
+    font-size: var(--text-lg);
+    color: var(--color-muted);
+    line-height: 1.6;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: 1.25rem;
+  }
+
+  .empty {
+    color: var(--color-muted);
+  }
+</style>

@@ -1,0 +1,66 @@
+---
+import type { MarkdownHeading } from 'astro'
+
+interface Props {
+  headings: MarkdownHeading[]
+}
+
+// Only h2/h3 — deeper levels make the rail noisy rather than useful.
+const items = Astro.props.headings.filter((h) => h.depth === 2 || h.depth === 3)
+---
+
+{
+  items.length > 1 && (
+    <nav class="toc" aria-labelledby="toc-heading">
+      <h2 class="toc__heading" id="toc-heading">
+        On this page
+      </h2>
+      <ul>
+        {items.map((heading) => (
+          <li class={heading.depth === 3 ? 'toc__sub' : undefined}>
+            <a href={`#${heading.slug}`}>{heading.text}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<style>
+  /* Not sticky itself — the whole rail sticks as one unit in LessonLayout.
+     Sticking only the TOC made it slide over the sections below it. */
+  .toc {
+    font-size: var(--text-sm);
+  }
+
+  .toc__heading {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 650;
+    color: var(--color-content);
+    margin-bottom: 0.7rem;
+  }
+
+  .toc ul {
+    list-style: none;
+    display: grid;
+    gap: 0.45rem;
+    border-inline-start: 1px solid var(--color-line);
+    padding-inline-start: 0.9rem;
+  }
+
+  .toc__sub {
+    padding-inline-start: 0.85rem;
+  }
+
+  .toc a {
+    color: var(--color-muted);
+    text-decoration: none;
+    line-height: 1.4;
+    display: block;
+  }
+  .toc a:hover {
+    color: var(--color-content);
+  }
+</style>

@@ -1,0 +1,58 @@
+---
+import { SITE_TITLE, SITE_DESCRIPTION } from '../lib/site.ts'
+
+interface Props {
+  title?: string | undefined
+  description?: string | undefined
+  /** Absolute or root-relative path to the social image. */
+  image?: string | undefined
+  type?: 'website' | 'article'
+  /** Any extra structured data to emit alongside the page. */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[] | undefined
+}
+
+const {
+  title,
+  description = SITE_DESCRIPTION,
+  image = '/og-default.png',
+  type = 'website',
+  jsonLd,
+} = Astro.props
+
+// The home page uses the bare site title; everything else is suffixed.
+const pageTitle = title ? `${title} · ${SITE_TITLE}` : `${SITE_TITLE} — ${SITE_DESCRIPTION}`
+
+const canonical = new URL(Astro.url.pathname, Astro.site)
+const imageUrl = new URL(image, Astro.site)
+
+const blocks = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : []
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+
+<title>{pageTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="sitemap" href="/sitemap-index.xml" />
+
+<meta property="og:site_name" content={SITE_TITLE} />
+<meta property="og:type" content={type} />
+<meta property="og:title" content={title ?? SITE_TITLE} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={imageUrl} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title ?? SITE_TITLE} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+
+{
+  blocks.map((block) => (
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(block)} />
+  ))
+}
