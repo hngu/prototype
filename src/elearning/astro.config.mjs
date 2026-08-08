@@ -4,6 +4,7 @@ import { satteri } from '@astrojs/markdown-satteri'
 import sitemap from '@astrojs/sitemap'
 import tailwindcss from '@tailwindcss/vite'
 import { quizPlugin } from './src/plugins/quiz-plugin.ts'
+import { CODE_THEMES, CODE_DEFAULT_COLOR } from './src/lib/code-theme.ts'
 
 // https://astro.build/config
 export default defineConfig({
@@ -25,11 +26,13 @@ export default defineConfig({
     processor: satteri({ mdastPlugins: [quizPlugin] }),
 
     shikiConfig: {
-      // `defaultColor: false` makes Shiki emit --shiki-light / --shiki-dark custom
-      // properties instead of baking one theme in, so CSS picks the theme with no
-      // JS, no flash and no double render. See styles/prose.css.
-      themes: { light: 'github-light', dark: 'github-dark-default' },
-      defaultColor: false,
+      // The theme pair and `defaultColor: false` live in src/lib/code-theme.ts so
+      // that ExerciseCard.astro can highlight the exercise files it reads off disk
+      // with the identical settings. Two copies would let Markdown code blocks and
+      // exercise panes drift apart in one colour mode only. See that file, and
+      // styles/code.css for how the custom properties are selected.
+      themes: CODE_THEMES,
+      defaultColor: CODE_DEFAULT_COLOR,
       wrap: false,
     },
   },

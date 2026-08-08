@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { defineMdastPlugin } from 'satteri'
 import type { MdastPluginDefinition } from 'satteri'
 import { parseQuizBlock } from './quiz-parse.ts'
+import { expectedIdPrefix, quizIdProblem } from './quiz-id.ts'
 import { renderQuiz } from './quiz-render.ts'
 
 /**
@@ -18,9 +19,29 @@ import { renderQuiz } from './quiz-render.ts'
  *
  * Why we throw instead of `ctx.report()`: `@astrojs/markdown-satteri` destructures
  * only `{ html, data }` from `markdownToHtml`, so Sätteri diagnostics are
- * discarded and a reported "error" would be silently swallowed. Throwing
- * propagates out through Astro's renderer as a real build failure, and in
- * `astro dev` it surfaces in the error overlay.
+ * discarded and a reported "error" would be silently swallowed.
+ *
+ * !! A THROW HERE DOES NOT FAIL THE BUILD. !!
+ *
+ * Measured, not assumed. Astro 7's glob loader catches whatever `render()`
+ * throws, logs `[ERROR] [glob-loader] Error rendering <file>`, and carries on —
+ * `astro build` then exits **0** having emitted the lesson page with a
+ * completely empty `<article>`. Silently publishing an empty lesson is the worst
+ * failure mode available, so the real gate lives outside this pipeline in
+ * `scripts/check-content.ts`, which validates every quiz block before the build
+ * runs and cannot be swallowed by anything.
+ *
+ * The throw is kept anyway, for two reasons: in `astro dev` it surfaces in the
+ * error overlay next to the content you are editing, and the log line names the
+ * offending file when a build does go wrong. It is a developer convenience, not
+ * a guarantee. `scripts/check-build.ts` is the belt to this braces — it asserts
+ * the emitted pages are not empty, which catches this class of failure even when
+ * the cause is something nobody has thought of yet.
+ *
+ * One more trap worth knowing: rendered Markdown is cached in
+ * `node_modules/.astro`, which survives `rm -rf .astro`. A change to *this* file
+ * therefore does not re-validate existing lessons on a normal rebuild. The
+ * `check:content` script reads the `.md` files directly and is immune.
  */
 
 /** Quiz id → path of the file that claimed it. Module scope, so it spans the
@@ -87,6 +108,14 @@ export function quizPlugin(): MdastPluginDefinition {
       }
 
       const { block } = result
+
+      // Shared with scripts/check-content.ts so the overlay and the gate can
+      // never disagree about what a valid id is.
+      const prefix = expectedIdPrefix(file)
+      if (prefix !== null) {
+        const problem = quizIdProblem(block.id, prefix)
+        if (problem) throw new Error(`${at(0)}\n${problem}`)
+      }
 
       // Key on the owning path rather than mere presence: the dev server
       // re-renders the same file on every edit, and that must stay idempotent

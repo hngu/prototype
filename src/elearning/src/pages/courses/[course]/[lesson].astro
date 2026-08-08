@@ -11,6 +11,7 @@ import {
   type Lesson,
 } from '../../../lib/courses.ts'
 import { SITE_TITLE } from '../../../lib/site.ts'
+import { loadExerciseFor } from '../../../lib/exercises.ts'
 
 /**
  * One flat pass over every course × lesson. prev/next are resolved here rather
@@ -44,6 +45,13 @@ interface Props {
 const { course, lesson, lessons, prev, next } = Astro.props
 const { Content, headings } = await render(lesson)
 
+/* Loaded in the page body rather than getStaticPaths on purpose. A throw here
+   propagates out of page rendering and stops the build with a non-zero exit —
+   whereas anything thrown inside the content pipeline is caught and swallowed by
+   the glob loader (see plugins/quiz-plugin.ts). Every built lesson page runs this,
+   so a broken exercise reference cannot reach production. */
+const exercise = loadExerciseFor(lesson)
+
 const lessonUrl = new URL(`/courses/${course.id}/${lessonSlug(lesson)}`, Astro.site).href
 
 const jsonLd = [
@@ -62,6 +70,17 @@ const jsonLd = [
       url: new URL(`/courses/${course.id}`, Astro.site).href,
     },
     provider: { '@type': 'Organization', name: SITE_TITLE },
+    ...(exercise
+      ? {
+          teaches: exercise.title,
+          hasPart: {
+            '@type': 'LearningResource',
+            learningResourceType: 'Exercise',
+            name: exercise.title,
+            url: exercise.href,
+          },
+        }
+      : {}),
   },
   {
     '@context': 'https://schema.org',
@@ -93,6 +112,7 @@ const jsonLd = [
   next={next}
   headings={headings}
   jsonLd={jsonLd}
+  exercise={exercise}
 >
   <Content />
 </LessonLayout>

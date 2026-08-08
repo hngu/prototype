@@ -1,3 +1,7 @@
+/* The Shiki theme-pick rules are shared with the exercise card, so they live in
+   their own file. Must come first: CSS @import has to precede all rules. */
+@import './code.css';
+
 /* Hand-rolled lesson typography.
    Deliberately not @tailwindcss/typography: it fights Shiki's <pre> styling and
    ships a pile of opinions that cost more to override than this file costs to
@@ -122,9 +126,10 @@
 }
 
 /* ── Code ─────────────────────────────────────────────────────────────────
-   Shiki runs with `defaultColor: false`, so it emits --shiki-light and
-   --shiki-dark on every token instead of baking one theme in. We just pick.
-   No JS, no flash, no double render. */
+   Box styling only. The dual-theme colour selection lives in code.css, imported
+   at the top of this file, because the exercise card needs the identical rules
+   for the files it reads off disk. Chrome stays per-context: an exercise pane
+   wants different padding and a max-height, a lesson code block does not. */
 
 .prose :not(pre) > code {
   font-family: var(--font-mono);
@@ -160,20 +165,4 @@
   white-space: pre;
 }
 
-.prose pre,
-.prose pre span {
-  color: var(--shiki-light);
-  background-color: var(--shiki-light-bg);
-}
-
-[data-theme='dark'] .prose pre,
-[data-theme='dark'] .prose pre span {
-  color: var(--shiki-dark);
-  background-color: var(--shiki-dark-bg);
-}
-
-/* Only the <pre> itself paints a background; tokens stay transparent so the
-   block reads as one surface. */
-.prose pre span {
-  background-color: transparent;
-}
+/* Colour selection for the above: styles/code.css. */

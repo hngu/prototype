@@ -12,6 +12,10 @@ import {
   type Lesson,
 } from '../../../lib/courses.ts'
 import { LEVEL_LABELS, SITE_TITLE } from '../../../lib/site.ts'
+import { TYPESCRIPT_VERSION } from '../../../lib/typescript-version.ts'
+/* The course intro body renders with `class="prose"` below but this stylesheet was
+   never imported, so it has been unstyled since the page was written. */
+import '../../../styles/prose.css'
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const courses = await getPublishedCourses()
@@ -32,6 +36,14 @@ const { course, lessons } = Astro.props
 const { Content } = await render(course)
 const duration = totalDuration(lessons)
 const firstLesson = lessons[0]
+
+/* Only TypeScript courses advertise a compiler version, and they advertise the
+   one that actually graded their exercises. Gated on the tag rather than shown
+   unconditionally: this site is not TypeScript-only by design, and a stray
+   "TypeScript 6.0.3" on a future Python course would be worse than no badge. */
+const languageVersion = course.data.tags.includes('typescript')
+  ? `TypeScript ${TYPESCRIPT_VERSION}`
+  : undefined
 
 const jsonLd = [
   {
@@ -85,6 +97,14 @@ const jsonLd = [
             <>
               <span aria-hidden="true">·</span>
               <span>{formatDuration(duration)}</span>
+            </>
+          )
+        }
+        {
+          languageVersion && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>{languageVersion}</span>
             </>
           )
         }

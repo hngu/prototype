@@ -1,0 +1,103 @@
+---
+/**
+ * The `Practice` card at the end of a lesson: the brief, the starter, the tests,
+ * how to run them, and the reference solution behind a disclosure.
+ *
+ * Ships zero client JavaScript. The spoiler is a plain <details>, which the
+ * platform already implements correctly for keyboards and screen readers — the
+ * same reasoning as the quiz's <noscript> fallback.
+ *
+ * Highlighting uses <Code> from astro:components rather than Shiki directly:
+ * `shiki` does not resolve from this package under pnpm's strict layout, but
+ * <Code> reaches it through Astro's own dependency tree, so this needs no new
+ * dependency. It is fed the same CODE_THEMES / CODE_DEFAULT_COLOR as the Markdown
+ * pipeline so the panes and the lesson's own code blocks cannot drift apart.
+ *
+ * Astro caches one highlighter per (langs, themes) pair, so the three panes per
+ * card share it across the whole build.
+ */
+import { Code } from 'astro:components'
+import { CODE_THEMES, CODE_DEFAULT_COLOR } from '../lib/code-theme.ts'
+import type { Exercise } from '../lib/exercises.ts'
+import VerifiedPill from './VerifiedPill.astro'
+
+interface Props {
+  exercise: Exercise
+}
+
+const { exercise } = Astro.props
+
+/* The learner runs these two, in this order. Kept here rather than in each
+   exercise's README so the instructions cannot drift across 40 exercises. */
+const RUN_COMMANDS = [
+  'pnpm --filter exercises attempt   # grade your starter.ts',
+  'pnpm --filter exercises verify    # the full gate CI runs',
+].join('\n')
+---
+
+<section class="exercise" aria-labelledby="practice">
+  {/* id is the anchor the layout's injected TOC entry points at. */}
+  <h2 class="exercise__heading" id="practice">Practice</h2>
+  <p class="exercise__title">{exercise.title}</p>
+
+  <div class="exercise__brief" set:html={exercise.briefHtml} />
+  <div class="exercise__goal" set:html={exercise.goalHtml} />
+
+  <figure class="exercise__pane">
+    <figcaption>
+      <span class="exercise__file">{exercise.starter.name}</span>
+      <a href={exercise.starter.href} rel="noopener">Open on GitHub</a>
+    </figcaption>
+    <Code
+      code={exercise.starter.code}
+      lang="ts"
+      themes={CODE_THEMES}
+      defaultColor={CODE_DEFAULT_COLOR}
+      wrap={false}
+    />
+  </figure>
+
+  <figure class="exercise__pane">
+    <figcaption>
+      <span class="exercise__file">{exercise.tests.name}</span>
+      <a href={exercise.tests.href} rel="noopener">Open on GitHub</a>
+    </figcaption>
+    <Code
+      code={exercise.tests.code}
+      lang="ts"
+      themes={CODE_THEMES}
+      defaultColor={CODE_DEFAULT_COLOR}
+      wrap={false}
+    />
+  </figure>
+
+  <div class="exercise__run">
+    <p>Clone the repository, then:</p>
+    <Code code={RUN_COMMANDS} lang="bash" themes={CODE_THEMES} defaultColor={CODE_DEFAULT_COLOR} />
+  </div>
+
+  <details class="exercise__solution">
+    <summary>Show the reference solution</summary>
+    <p class="exercise__spoiler">
+      Worth attempting first — reading a solution feels a lot like understanding it.
+    </p>
+    <figure class="exercise__pane">
+      <figcaption>
+        <span class="exercise__file">{exercise.solution.name}</span>
+        <a href={exercise.solution.href} rel="noopener">Open on GitHub</a>
+      </figcaption>
+      <Code
+        code={exercise.solution.code}
+        lang="ts"
+        themes={CODE_THEMES}
+        defaultColor={CODE_DEFAULT_COLOR}
+        wrap={false}
+      />
+    </figure>
+  </details>
+
+  <footer class="exercise__footer">
+    <VerifiedPill />
+    <a href={exercise.href} rel="noopener">{exercise.dir}</a>
+  </footer>
+</section>

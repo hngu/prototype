@@ -10,7 +10,10 @@
     "check": "astro check",
     "sync": "astro sync",
     "lint": "oxlint",
-    "og": "node scripts/make-og.mjs"
+    "og": "node scripts/make-og.mjs",
+    "check:content": "node scripts/check-content.ts",
+    "check:build": "node scripts/check-build.ts",
+    "verify": "pnpm run lint && pnpm run check:content && pnpm run check && pnpm run build && pnpm run check:build"
   },
   "dependencies": {
     "@astrojs/markdown-satteri": "0.3.5",

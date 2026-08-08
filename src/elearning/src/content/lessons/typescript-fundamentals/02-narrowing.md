@@ -37,7 +37,7 @@ no `else` required. This is **narrowing**, and it is why idiomatic TypeScript te
 ordinary defensive JavaScript.
 
 ```quiz
-id: ts-narrowing-after-return
+id: typescript-fundamentals-narrowing-q1
 q: After the `if (typeof input === 'string') { return ... }` block returns, what is the type of `input`?
 - [ ] `string | number`
 - [x] `number`
@@ -72,7 +72,7 @@ function area(shape: Shape) {
 ```
 
 ```quiz
-id: ts-narrowing-operators
+id: typescript-fundamentals-narrowing-q2
 q: Which of these will narrow a `string | number | Date` union?
 - [x] `typeof value === 'string'`
 - [x] `value instanceof Date`
@@ -106,7 +106,7 @@ comparison collapses the union to exactly one member, and TypeScript can tell yo
 has missed a case.
 
 ```quiz
-id: ts-discriminant-requirement
+id: typescript-fundamentals-narrowing-q3
 type: true-false
 q: A discriminated union requires every member to share a field whose type is a literal.
 answer: true

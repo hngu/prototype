@@ -4,9 +4,12 @@ import BaseLayout from './BaseLayout.astro'
 import Toc from '../components/Toc.astro'
 import LessonNav from '../components/LessonNav.astro'
 import AdSlot from '../components/AdSlot.astro'
+import ExerciseCard from '../components/ExerciseCard.astro'
 import { formatDuration, lessonSlug, type Course, type Lesson } from '../lib/courses.ts'
+import type { Exercise } from '../lib/exercises.ts'
 import '../styles/prose.css'
 import '../styles/quiz.css'
+import '../styles/exercise.css'
 
 interface Props {
   course: Course
@@ -16,10 +19,19 @@ interface Props {
   next: Lesson | undefined
   headings: MarkdownHeading[]
   jsonLd?: Record<string, unknown> | Record<string, unknown>[] | undefined
+  exercise?: Exercise | undefined
 }
 
-const { course, lesson, lessons, prev, next, headings, jsonLd } = Astro.props
+const { course, lesson, lessons, prev, next, headings, jsonLd, exercise } = Astro.props
 const position = lessons.findIndex((l) => l.id === lesson.id) + 1
+
+/* The exercise card renders from this layout rather than from the Markdown, so
+   its heading is invisible to `render(lesson)` and therefore to `headings`.
+   Append it by hand or the table of contents stops one section short of the
+   bottom of the page. */
+const tocHeadings: MarkdownHeading[] = exercise
+  ? [...headings, { depth: 2, slug: 'practice', text: 'Practice' }]
+  : headings
 ---
 
 <BaseLayout
@@ -49,13 +61,15 @@ const position = lessons.findIndex((l) => l.id === lesson.id) + 1
         <slot />
       </article>
 
+      {exercise && <ExerciseCard exercise={exercise} />}
+
       <AdSlot placement="end" />
 
       <LessonNav courseId={course.id} prev={prev} next={next} />
     </div>
 
     <aside class="lesson__rail">
-      <Toc headings={headings} />
+      <Toc headings={tocHeadings} />
 
       <nav class="rail-lessons" aria-label="Course lessons">
         <h2 class="rail-lessons__heading">In this course</h2>

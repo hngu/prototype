@@ -1,0 +1,247 @@
+/* Exercise card.
+   Chrome matches .quiz deliberately — a lesson ends with two card-shaped things
+   and they should read as siblings, not as two different design systems.
+
+   This file is GLOBAL, imported from LessonLayout.astro exactly like quiz.css,
+   and it cannot become a scoped <style> in ExerciseCard.astro: <Code> renders its
+   output through `set:html`, and Astro does not apply the scoping attribute to
+   that, so a scoped `pre { … }` would silently match nothing. */
+
+.exercise {
+  margin-block: 3rem 0;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--color-line);
+  border-radius: 0.85rem;
+  background: var(--color-raised);
+  max-width: var(--container-measure);
+}
+
+.exercise__heading {
+  /* Overrides the `.prose h2` size: this is a section label, not a lesson
+     heading, and it sits outside `.prose` anyway. */
+  margin: 0;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 650;
+  color: var(--color-brand-500);
+  scroll-margin-top: 5rem; /* clears the sticky header on TOC jumps */
+}
+
+.exercise__title {
+  margin-block: 0.5rem 0;
+  font-size: var(--text-xl);
+  font-weight: 620;
+  line-height: 1.35;
+  color: var(--color-content);
+}
+
+.exercise__brief,
+.exercise__goal {
+  margin-block-start: 0.9rem;
+  font-size: var(--text-base);
+  line-height: 1.7;
+  color: var(--color-content);
+}
+
+.exercise__brief p + p,
+.exercise__goal p + p {
+  margin-block-start: 0.8em;
+}
+
+.exercise__goal ul {
+  list-style: disc;
+  padding-inline-start: 1.25rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.exercise__goal h2,
+.exercise__goal h3 {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 650;
+  color: var(--color-muted);
+  margin-block: 0 0.6rem;
+}
+
+.exercise code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+/* Inline code only. A `pre > code` inherits from the highlighted block. */
+.exercise :not(pre) > code {
+  background: var(--color-sunken);
+  border: 1px solid var(--color-line);
+  border-radius: 0.35rem;
+  padding: 0.12em 0.35em;
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+}
+
+/* ── Code panes ───────────────────────────────────────────────────────────── */
+
+.exercise__pane {
+  margin: 1.25rem 0 0;
+  border: 1px solid var(--color-line);
+  border-radius: 0.6rem;
+  overflow: hidden; /* clips the <pre> corners to the border radius */
+}
+
+.exercise__pane figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-sunken);
+  border-block-end: 1px solid var(--color-line);
+  font-size: var(--text-xs);
+}
+
+.exercise__file {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-content);
+}
+
+.exercise__pane figcaption a {
+  color: var(--color-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.exercise__pane figcaption a:hover {
+  color: var(--color-brand-500);
+  text-decoration: underline;
+}
+
+.exercise pre {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  tab-size: 2;
+  /* A long test file should not dominate the page; the pane scrolls in itself.
+     Paired with overflow-x so a wide line never widens the layout. */
+  max-height: 26rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.exercise pre > code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+  white-space: pre;
+}
+
+/* ── Run instructions ─────────────────────────────────────────────────────── */
+
+.exercise__run {
+  margin-block-start: 1.5rem;
+}
+
+.exercise__run > p {
+  margin-block-end: 0.5rem;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.exercise__run pre {
+  border: 1px solid var(--color-line);
+  border-radius: 0.6rem;
+  max-height: none;
+}
+
+/* ── Solution spoiler ─────────────────────────────────────────────────────── */
+
+.exercise__solution {
+  margin-block-start: 1.5rem;
+  border-top: 1px solid var(--color-line);
+  padding-block-start: 1.25rem;
+}
+
+/* A <details>/<summary> rather than a JS toggle: the platform already does
+   disclosure correctly, including for keyboards and screen readers, and it keeps
+   this card at zero client JS like the rest of the page. */
+.exercise__solution summary {
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 620;
+  color: var(--color-content);
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background: var(--color-sunken);
+  list-style-position: inside;
+}
+
+.exercise__solution summary:hover {
+  border-color: var(--color-line-strong);
+}
+
+.exercise__solution summary:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+.exercise__spoiler {
+  margin-block: 0.9rem 0;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.exercise__solution .exercise__pane {
+  margin-block-start: 0.9rem;
+}
+
+/* ── Footer / verified pill ───────────────────────────────────────────────── */
+
+.exercise__footer {
+  margin-block-start: 1.5rem;
+  padding-block-start: 1rem;
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+}
+
+.exercise__footer > a {
+  font-family: var(--font-mono);
+  color: var(--color-muted);
+  text-decoration: none;
+}
+.exercise__footer > a:hover {
+  color: var(--color-brand-500);
+  text-decoration: underline;
+}
+
+.verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-muted);
+  text-decoration: none;
+  line-height: 1.4;
+}
+
+.verified:hover {
+  color: var(--color-content);
+}
+
+.verified__dot {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-brand-500);
+  flex: none;
+}

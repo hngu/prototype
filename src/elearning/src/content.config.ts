@@ -44,6 +44,14 @@ const lessons = defineCollection({
     summary: z.string(),
     /* Estimated reading time in minutes. */
     duration: z.number().int().positive(),
+    /* True when `src/exercises/<this lesson's id>/` exists and holds README.md,
+       starter.ts, solution.ts and solution.test.ts. The path is derived from the
+       lesson id rather than written out, so there is no second string to typo —
+       but the flag stays explicit, because "directory missing" has to mean "the
+       build stops", not "no exercise today". Zod cannot see the entry id here, so
+       the pairing is validated in src/lib/exercises.ts and, for draft lessons
+       too, by src/exercises/tools/check-manifest.ts. */
+    exercise: z.boolean().default(false),
     draft: z.boolean().default(false),
   }),
 })

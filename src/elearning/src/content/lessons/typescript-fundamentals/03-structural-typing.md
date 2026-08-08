@@ -30,7 +30,7 @@ an `x: number` and a `y: number`. The extra `label` is irrelevant — it satisfi
 and then some.
 
 ```quiz
-id: ts-structural-extra-props
+id: typescript-fundamentals-structural-typing-q1
 q: Why does `distance(marker)` compile, even though `marker` was never declared as a `Point`?
 - [x] TypeScript compares types by shape, and `marker` has every property `Point` requires
 - [ ] TypeScript silently casts the argument to `Point`
@@ -55,7 +55,7 @@ function — there is no other variable it could have been meant for. Assign it 
 and the check does not apply, because now the extra property plausibly serves another purpose.
 
 ```quiz
-id: ts-excess-property-check
+id: typescript-fundamentals-structural-typing-q2
 q: Which of these are rejected by excess property checking?
 - [x] `distance({ x: 1, y: 2, z: 3 })`
 - [ ] `const p = { x: 1, y: 2, z: 3 }; distance(p)`
@@ -80,7 +80,7 @@ TypeScript works so comfortably over plain JSON, third-party objects and code th
 type declarations at all.
 
 ```quiz
-id: ts-structural-vs-nominal
+id: typescript-fundamentals-structural-typing-q3
 type: true-false
 q: Two TypeScript interfaces with different names but identical members are interchangeable.
 answer: true

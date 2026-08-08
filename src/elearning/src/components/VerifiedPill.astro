@@ -1,0 +1,22 @@
+---
+/**
+ * "Typechecked and tested against TypeScript X.Y.Z", linking to the CI run.
+ *
+ * Deliberately NOT GitHub's badge.svg. Embedding it would put a third-party image
+ * request on every lesson page of a site whose selling point is shipping almost no
+ * client JS and whose privacy page has to enumerate third parties — and it would
+ * leak a referrer, add an unsized image (layout shift), and be uncacheable.
+ *
+ * This pill is local, always renders, and states the version that is actually
+ * installed rather than a hardcoded string: src/lib/typescript-version.ts fails
+ * the build if the two disagree. GitHub's badge belongs in the README, where the
+ * reader is already on github.com.
+ */
+import { CI_WORKFLOW_URL } from '../lib/site.ts'
+import { TYPESCRIPT_VERSION } from '../lib/typescript-version.ts'
+---
+
+<a class="verified" href={CI_WORKFLOW_URL} rel="noopener">
+  <span class="verified__dot" aria-hidden="true"></span>
+  Typechecked and tested against TypeScript {TYPESCRIPT_VERSION}
+</a>

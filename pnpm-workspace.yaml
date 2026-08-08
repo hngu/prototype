@@ -1,6 +1,11 @@
 packages:
   - 'src/frontend'
   - 'src/elearning'
+  # Runnable solutions + unit tests for every coding exercise in the elearning
+  # courses. Its own package so exercise code is typechecked under the strict,
+  # Node-executable settings a learner will actually run it with, rather than
+  # inheriting the site's bundler-oriented tsconfig.
+  - 'src/exercises'
 
 # Narrow allowlist of packages permitted to run install scripts. Everything else
 # is blocked by default, which is the main defense against install-script worms.

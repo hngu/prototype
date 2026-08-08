@@ -4,6 +4,7 @@ course: typescript-fundamentals
 order: 1
 summary: TypeScript picks a type for almost every value you write. Knowing which one it picks — and when it deliberately picks a broader one — removes most day-one confusion.
 duration: 8
+exercise: true
 draft: false
 ---
 
@@ -30,7 +31,7 @@ binding is expected to change, so keeping the type as `5` would make the very ne
 error. TypeScript **widens** the literal to its base type.
 
 ```quiz
-id: ts-inference-const-literal
+id: typescript-fundamentals-type-inference-q1
 q: What type does TypeScript infer for `const x = 5`?
 - [x] `5`
 - [ ] `number`
@@ -69,7 +70,7 @@ Option 3 makes every property `readonly` as well as narrow, which is usually wha
 configuration objects but occasionally more than you asked for.
 
 ```quiz
-id: ts-widening-object-props
+id: typescript-fundamentals-type-inference-q2
 q: Which of these produce a `mode` property typed as `"dark"` rather than `string`?
 - [ ] `const config = { mode: 'dark' }`
 - [x] `const config = { mode: 'dark' as const }`
@@ -89,7 +90,7 @@ widening is TypeScript making a reasonable guess, while `any` is TypeScript bein
 looking.
 
 ```quiz
-id: ts-widening-vs-any
+id: typescript-fundamentals-type-inference-q3
 type: true-false
 q: Widening a literal type to `number` disables type checking for that value.
 answer: false

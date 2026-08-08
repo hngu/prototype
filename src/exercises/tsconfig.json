@@ -1,0 +1,57 @@
+{
+  "compilerOptions": {
+    /* Node 24 runs these files directly, stripping the types as it goes.
+       `nodenext` is the only module setting that models that honestly —
+       `Bundler` would happily accept extensionless relative imports that Node
+       then cannot resolve at runtime. */
+    "target": "es2024",
+    "lib": ["es2024"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    /* Node's type stripping DELETES types; it does not compile them. Anything
+       that needs codegen — enum, namespace, parameter properties, `declare`
+       class fields, decorators, `export =` — parses fine and then fails at
+       runtime, and the parameter-property case fails *silently* as `undefined`.
+       `erasableSyntaxOnly` moves that failure to authoring time, where it is a
+       tsc error on the offending line instead of a mystery in CI.
+       This is the single most important flag in this file.
+       See README.md, "The erasable-syntax rule". */
+    "erasableSyntaxOnly": true,
+
+    /* Same class of problem, different mechanism: stripping cannot tell a
+       type-only import from a value import, so `import { SomeType }` survives
+       into runtime and throws "does not provide an export named 'SomeType'".
+       `verbatimModuleSyntax` forces the `import type` that prevents it. */
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
+    /* Node requires the real extension in a relative specifier, so exercises
+       import `./solution.ts` rather than `./solution`. Verified: this
+       combination typechecks under tsc 6.0.3 without
+       `rewriteRelativeImportExtensions`. */
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+
+    "strict": true,
+    /* On, and it is a teaching choice: array and record access really can miss,
+       and the site's own source already writes as though this were set
+       (`lines[i] ?? ''`). Exercises should not teach a laxer TypeScript than the
+       thing hosting them is written in. */
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Deliberately absent: noUnusedLocals / noUnusedParameters. Every
+       starter.ts stub takes parameters it does not use yet, and a starter that
+       fails to typecheck on a fresh clone destroys this package's core
+       invariant (README, "The three invariants"). exactOptionalPropertyTypes is
+       also absent — correct, but too surprising for a course-1 learner. */
+
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}

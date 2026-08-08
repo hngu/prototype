@@ -1,0 +1,38 @@
+/* ── Shiki, dual theme, no JS ───────────────────────────────────────────────
+   The highlighter runs with `defaultColor: false` (see src/lib/code-theme.ts), so
+   every token carries --shiki-light / --shiki-dark custom properties instead of a
+   baked-in colour. All this file does is pick one. No flash, no double render, no
+   client JS.
+
+   Both contexts are listed together on purpose:
+
+     .prose pre      fenced code blocks, highlighted by the Markdown pipeline
+     .exercise pre   exercise files read off disk, highlighted by <Code>
+
+   They must never drift, and two copies of these rules is exactly how they would
+   — a divergence here is visible in one colour mode only, which is the kind of
+   bug that survives for a month. If you add a third context that renders Shiki
+   output, add its selector here rather than copying the block. */
+
+.prose pre,
+.prose pre span,
+.exercise pre,
+.exercise pre span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
+[data-theme='dark'] .prose pre,
+[data-theme='dark'] .prose pre span,
+[data-theme='dark'] .exercise pre,
+[data-theme='dark'] .exercise pre span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+
+/* Only the <pre> itself paints a background; tokens stay transparent so the block
+   reads as one surface. */
+.prose pre span,
+.exercise pre span {
+  background-color: transparent;
+}
