@@ -1,0 +1,49 @@
+name: Set up workspace
+description: >
+  Installs the Node and pnpm versions named in .tool-versions, then installs the
+  workspace with a frozen lockfile.
+
+# Every `uses:` below is pinned to a full commit SHA, with the tag in a trailing
+# comment. This repository quarantines npm dependencies for seven days
+# (`minimumReleaseAge` in pnpm-workspace.yaml) and blocks install scripts by
+# default; a floating `@v7` tag would be the same supply-chain hole in a different
+# registry, since tags are mutable. Chosen versions were also checked to be more
+# than seven days old, for consistency with that policy — which is why
+# pnpm/action-setup is v6.0.9 rather than the v6.0.10 published five days before
+# this was written.
+#
+# To update: `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, and check
+# `gh api repos/<owner>/<repo>/releases/tags/<tag> --jq .published_at` is aged.
+
+runs:
+  using: composite
+  steps:
+    # Read the toolchain out of .tool-versions rather than hardcoding it here.
+    # This repo has no root package.json, so pnpm/action-setup cannot infer the
+    # version from a `packageManager` field, and a literal in this file would be a
+    # second place for the toolchain version to live and drift.
+    - id: tools
+      shell: bash
+      run: |
+        set -euo pipefail
+        node_version="$(awk '$1 == "nodejs" { print $2 }' .tool-versions)"
+        pnpm_version="$(awk '$1 == "pnpm" { print $2 }' .tool-versions)"
+        test -n "$node_version" || { echo "::error::no 'nodejs' line in .tool-versions"; exit 1; }
+        test -n "$pnpm_version" || { echo "::error::no 'pnpm' line in .tool-versions"; exit 1; }
+        echo "node=$node_version" >> "$GITHUB_OUTPUT"
+        echo "pnpm=$pnpm_version" >> "$GITHUB_OUTPUT"
+        echo "Node $node_version, pnpm $pnpm_version"
+
+    - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      with:
+        version: ${{ steps.tools.outputs.pnpm }}
+
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ steps.tools.outputs.node }}
+        cache: pnpm
+
+    # --frozen-lockfile fails if pnpm-lock.yaml does not match the manifests,
+    # which is what makes CI catch a dependency added without committing the lock.
+    - shell: bash
+      run: pnpm install --frozen-lockfile

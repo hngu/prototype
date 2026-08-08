@@ -1,0 +1,80 @@
+name: exercises
+
+# One workflow, two jobs, one badge. Split across two workflows this would need
+# two badges, and a reader would check one of them.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege. Nothing here writes to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: exercises-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exercises:
+    name: exercises (tsc + node --test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-workspace
+
+      # ORDERING IS LOAD-BEARING, do not reorder for tidiness.
+      #
+      # `node --test` exits 0 when it discovers no test files — and also when
+      # handed a path that does not exist (both measured). "Green" and "graded
+      # something" are therefore different facts, and `manifest` is the only thing
+      # that checks the second one: it fails on a count of zero, on an incomplete
+      # exercise directory, and on a lesson whose exercise is missing.
+      #
+      # Without this step first, renaming a directory would produce a passing run
+      # that graded nothing, and the "verified" pill on every lesson page would be
+      # certifying an empty set.
+      - run: pnpm --filter exercises manifest
+
+      # Typecheck before running: exercises are authored under erasableSyntaxOnly,
+      # and a non-erasable construct (enum, namespace, parameter property) is a tsc
+      # error here rather than a confusing runtime failure below.
+      - run: pnpm --filter exercises typecheck
+
+      # Grades solution.ts for every exercise. This is the claim the site makes.
+      - run: pnpm --filter exercises test
+
+  site:
+    name: site (lint + content + check + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-workspace
+
+      - run: pnpm --filter elearning lint
+
+      # The build is NOT a sufficient content gate, which is why these two script
+      # steps exist either side of it.
+      #
+      # Astro 7's glob loader catches whatever `render()` throws, logs
+      # `[ERROR] [glob-loader] …`, and continues — `astro build` then exits 0 having
+      # emitted the lesson page with a completely empty <article>. Measured, and it
+      # is the reason a malformed quiz block cannot be relied on to fail a build.
+      #
+      #   check:content  validates every quiz block by reading the .md files
+      #                  directly, before the build. Catches the cause.
+      #   check:build    asserts every emitted lesson page has real prose and that
+      #                  rendered quiz counts match the source. Catches the shape
+      #                  of the symptom, so the next cause is caught too.
+      - run: pnpm --filter elearning check:content
+
+      - run: pnpm --filter elearning check
+
+      # A lesson pointing at a missing or incomplete exercise DOES fail here:
+      # loadExerciseFor runs in the page body, outside the content pipeline, where
+      # a throw stops the build with a non-zero exit.
+      - run: pnpm --filter elearning build
+
+      - run: pnpm --filter elearning check:build

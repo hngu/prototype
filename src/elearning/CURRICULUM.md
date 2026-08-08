@@ -23,7 +23,7 @@ This file is three things at once:
 
 | # | Course | id | Level | Lessons | Exercises | `draft` |
 |---|---|---|---|---|---|---|
-| 1 | TypeScript Fundamentals | `typescript-fundamentals` | beginner | 1 / 8 | 1 / 8 | `false` |
+| 1 | TypeScript Fundamentals | `typescript-fundamentals` | beginner | **8 / 8** | **8 / 8** | `false` |
 | 2 | Functions and Objects | `typescript-functions-objects` | beginner | 0 / 8 | 0 / 8 | `true` |
 | 3 | Type Manipulation | `typescript-type-manipulation` | intermediate | 0 / 9 | 0 / 9 | `true` |
 | 4 | Classes and Object-Oriented TypeScript | `typescript-classes` | intermediate | 0 / 6 | 0 / 5 | `true` |
@@ -46,20 +46,57 @@ in [Exercise gaps](#exercise-gaps))
 Existing lesson URLs are preserved. `order` and the `NN-` filename prefixes change,
 which is free: `order` is authoritative and the prefix is stripped from the id.
 
+**Complete.** Course published (`draft: false`). Titles below are the shipped ones.
+
 | # | Slug | L | E | Docs source | ELI5 angle | Exercise |
 |---|---|---|---|---|---|---|
-| 1 | `what-typescript-does` | [ ] | [ ] | `typescript-from-scratch`, `typescript-in-5-minutes`, `2/basic-types` | A spellchecker for code. It reads your program before it runs, then steps out of the way — the types are not in the JavaScript that ships. | Fix three files so `tsc` goes quiet, without changing any runtime behaviour |
-| 2 | `type-inference` | [ ] | [x] | `type-inference`, `variable-declarations` | TypeScript reads over your shoulder and writes the label for you. A `const` gets a laminated label; a `let` gets a whiteboard one. | **Pin a theme config** — `as const` tuple, readonly config, `isMode` predicate |
-| 3 | `everyday-types` | [ ] | [ ] | `2/everyday-types` | The vocabulary list. Nine words cover most of the code you will ever write. | Type an untyped `parseOrder`; replace an `any` with a union |
-| 4 | `narrowing` | [ ] | [ ] | `2/narrowing` | A union is a labelled box that might hold one of two things. Narrowing is looking inside before you reach in. | `describe(value: string \| number \| Date)` — one branch per member, no casts |
-| 5 | `type-predicates` | [ ] | [ ] | `2/narrowing#using-type-predicates`, `#assertion-functions` | Teaching TypeScript a check it does not know yet, by signing your name to it. | `isNonEmptyString`, `isRecord`, and an `assertDefined` assertion function |
-| 6 | `structural-typing` | [ ] | [ ] | `type-compatibility`, `typescript-in-5-minutes-oop`, `typescript-in-5-minutes-func` | Types are job descriptions, not name badges. If you can do the job, you are hired. | `greet(entity: { name: string })` plus a fixture satisfying three unrelated shapes |
-| 7 | `any-unknown-never` | [ ] | [ ] | `2/everyday-types#any`, `2/narrowing#the-never-type`, `do-s-and-don-ts` | Three ways to say "I don't know": stop asking (`any`), ask me later (`unknown`), that cannot happen (`never`). | `parseJson(text): unknown` with a narrowing gate; an `assertNever` helper |
-| 8 | `null-and-strictness` | [ ] | [ ] | `2/everyday-types#null-and-undefined`, `/tsconfig/#strictNullChecks`, `#noUncheckedIndexedAccess` | An empty box and no box at all are different problems. | `firstWord(text?: string)`, and a `pick` that survives `noUncheckedIndexedAccess` |
+| 1 | `what-typescript-does` | [x] | [x] | `typescript-from-scratch`, `typescript-in-5-minutes`, `2/basic-types` | A friend who is good at spelling: they read the letter, circle the mistakes, and go home. Their circles are not in the envelope. | **Trust nothing at the door** — `toFahrenheit`, `hottest`, and a `parseReading(raw: unknown)` that validates at the boundary |
+| 2 | `type-inference` | [x] | [x] | `type-inference`, `variable-declarations` | Two label makers on the desk: one laminates, one is a whiteboard marker. `const` gets the first, `let` the second. | **Pin a theme config** — `as const` tuple, readonly config, `isMode` predicate |
+| 3 | `everyday-types` | [x] | [x] | `2/everyday-types` | A three-year-old gets a long way on fifty words, because they are the right fifty. | **Say it in nine words** — `symbolFor` over a literal union, `normaliseQuantity(string \| number)`, an optional `note` |
+| 4 | `narrowing` | [x] | [x] | `2/narrowing` | A closed box holding either a kitten or a hammer. You would look first. | **Look before you reach in** — `describe(string \| number \| Date)`, `in`-narrowing, and a `default`-less exhaustive switch |
+| 5 | `type-predicates` | [x] | [x] | `2/narrowing#using-type-predicates`, `#assertion-functions` | A bouncer on the door. Once they wave you through, nobody inside asks again. | **Sign your name to the check** — `isNonEmptyString`, `isRecord`, `assertDefined`, `requireField`, `nameOf` |
+| 6 | `structural-typing` | [x] | [x] | `type-compatibility`, `typescript-in-5-minutes-oop`, `typescript-in-5-minutes-func` | *Wanted: someone who can make coffee.* Nobody turns up with a certificate. Make a coffee, you are hired. | **Do the job, you're hired** — `greet(Named)`, `auditLine` over an intersection, and one object doing three unrelated jobs |
+| 7 | `any-unknown-never` | [x] | [x] | `2/everyday-types#any`, `2/narrowing#the-never-type`, `do-s-and-don-ts` | A parcel nobody has opened. Assume it is a kettle, refuse to use it until somebody looks, or insist there is no parcel. | **Three ways to say I don't know** — `parseJson(): unknown`, a narrowing gate in `countFrom`, and `assertNever` in a `default` arm |
+| 8 | `null-and-strictness` | [x] | [x] | `2/everyday-types#null-and-undefined`, `/tsconfig/#strictNullChecks`, `#noUncheckedIndexedAccess` | "It's empty" and "there is no tin" are different sentences. | **An empty box and no box** — `firstWord(text?)`, `??` vs `\|\|` in `pageSize`, and a `pick` that survives `noUncheckedIndexedAccess` |
 
 Lesson 6 is where the two audience-specific Get Started pages land — "coming from
 Java/C#" is really a lesson about structural vs nominal typing, and "coming from FP" is
-really about types as sets. Neither needs its own lesson; both need a paragraph.
+really about types as sets. Neither needs its own lesson; both need a paragraph. The FP
+paragraph also sets up `never` as the empty set, which lesson 7 then collects.
+
+### Decisions made while writing course 1
+
+Recorded because they are the kind of thing that gets re-litigated from scratch six
+months later.
+
+- **Lesson 1's exercise is not the one this file originally specified.** "Fix three
+  files so `tsc` goes quiet" is impossible under the exercises package's second
+  invariant — `typecheck` must be **green on a fresh clone**, and an exercise whose
+  starting state is a type error breaks that for the whole package, not just itself.
+  A per-directory opt-out would need a second tsconfig. The lesson teaches the same
+  thing from the other side instead: the compiler checks what you wrote and then
+  vanishes, so a value arriving at run time was never checked by anyone. See
+  `src/exercises/typescript-fundamentals/what-typescript-does/`.
+- **Assertion functions need an explicitly annotated call target.** Lesson 5's test
+  file declares `const subject: typeof solution = …` rather than letting the type be
+  inferred, because `subject.assertDefined(…)` is otherwise TS2775: "Assertions
+  require every name in the call target to be declared with an explicit type
+  annotation." Verified by deleting the annotation — five lines stop compiling. Any
+  later exercise exporting an `asserts` function needs the same annotation.
+- **`@ts-expect-error` is the tool for testing a *flag*.** Three lessons use it to
+  assert that something is refused: excess property checking on a fresh literal (6),
+  a property read on an `unknown` (7), and indexed access under
+  `noUncheckedIndexedAccess` (8). It is self-enforcing in both directions — the build
+  fails if the line stops erroring — so these claims cannot quietly go stale. Prefer
+  it to prose whenever the claim is "this does not compile".
+- **Every exercise carries at least one test whose point is that it compiles**, named
+  so a reader can tell (`isMode narrows, not just checks`, `assertDefined narrows
+  everything after the call`). Runtime assertions alone cannot tell an honest
+  signature from a lucky one.
+- **YAML frontmatter: quote any `summary` starting with a backtick.** A leading
+  backtick is a reserved indicator in YAML and fails `astro check` with "bad
+  indentation of a mapping entry", which does not sound like a quoting problem at
+  all. Lesson 7 carries a comment saying so.
 
 ## Course 2 — Functions and Objects
 
@@ -295,6 +332,17 @@ for Course 1, but a lesson whose entire point is a type (`Unwrap<T>`, a mapped t
 has no runtime behaviour to assert. Needs deciding at Course 3, with options including
 a relaxed parity check, `// @ts-expect-error` assertions, or a separate
 `tsc --noEmit` pass over starters. Do not invent machinery for it before then.
+
+> **Evidence from Course 1, which narrows this.** Three lessons now assert type-level
+> facts inside ordinary test files using `@ts-expect-error`, and it works well: it
+> fails the build both when the line errors unexpectedly *and* when it stops erroring,
+> so the claim cannot rot, and it needs no new machinery at all. What it cannot do is
+> assert that two types are *equal* — only that an expression is rejected. Course 3
+> most likely needs `@ts-expect-error` for the negative cases plus mutual-assignability
+> pairs (`const _a: X = y; const _b: typeof y = x`) for the positive ones, both of which
+> are already in use here. That is probably the whole answer, with no relaxed parity
+> check and no second tsc pass — but confirm it against a real mapped-type lesson before
+> committing.
 
 **`allowJs` / `checkJs` (affects 7.1, and would make it 40 exercises).** Course 7 is
 about JavaScript interop, and two of its lessons would naturally exercise a `.js` file.
