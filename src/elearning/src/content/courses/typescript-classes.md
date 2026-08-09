@@ -6,7 +6,7 @@ tags: ['typescript', 'classes', 'oop']
 icon: Cls
 accent: oklch(66% 0.15 150)
 order: 4
-draft: true
+draft: false
 ---
 
 TypeScript's classes are JavaScript's classes with a checklist stapled on: the same

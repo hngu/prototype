@@ -45,6 +45,15 @@ All four files are required. A directory missing one, a lesson with
 `pnpm manifest` — in both directions, so an orphan cannot sit here quietly going
 stale while CI stays green.
 
+**Extra files are tolerated, and needed exactly once.** The manifest checks that the
+four required files are *present*, not that nothing else is, so an exercise may add a
+fifth. `typescript-functions-objects/symbols` does: `unique symbol` is TypeScript's
+only nominal type, so `starter.ts` and `solution.ts` cannot each declare their own
+keys — the API-parity check fails with TS2322, correctly, because they really would be
+different keys. They share `keys.ts` instead. Note the lesson page only renders
+`starter.ts`, `solution.ts` and `solution.test.ts`, so a fifth file needs explaining
+in the brief; the "view on GitHub" link goes to the whole directory.
+
 ## The three invariants
 
 1. **`manifest` is green, and never counts zero.**
@@ -84,16 +93,16 @@ parses fine and then fails at runtime, so `tsconfig.json` sets
 **`erasableSyntaxOnly: true`** and **`verbatimModuleSyntax: true`** to move that
 failure to authoring time, where it is a tsc error on the offending line.
 
-| Banned in exercise code | What happens without the flag |
-| --- | --- |
-| `enum Direction { Up }` | the object never exists at runtime |
-| `namespace Foo {}` | same |
-| `constructor(private x: number)` | `x` is never assigned — a silent `undefined`, the worst failure mode |
-| `declare` class fields | erased, then read |
-| decorators | need codegen; not stripped |
-| `.tsx` / JSX | not stripped at all |
-| `import Foo = require('…')`, `export =` | not valid ESM |
-| `import { SomeType }` unmarked | `does not provide an export named 'SomeType'` |
+| Not usable in exercise code | Why | Enforced by |
+| --- | --- | --- |
+| `enum Direction { Up }` | the object never exists at run time | `TS1294` |
+| `namespace Foo {}` | same | `TS1294` |
+| `constructor(private x: number)` | `x` is never assigned — a silent `undefined`, the worst failure mode | `TS1294` |
+| `import Foo = require('…')`, `export =` | not valid ESM | `TS1294` |
+| `import { SomeType }` unmarked | `does not provide an export named 'SomeType'` | `verbatimModuleSyntax` |
+| decorators | need codegen | **nothing** — see below |
+| `accessor x = 0` | V8 does not implement auto-accessors | **nothing** — see below |
+| `.tsx` / JSX | not stripped at all | `include: ["**/*.ts"]` |
 
 **Prose is unaffected.** Fenced ` ```ts ` blocks in a lesson are highlighted, never
 executed, so the courses teach enums, decorators and parameter properties in full,
@@ -105,6 +114,27 @@ page.
 
 Fully erasable and used freely: `abstract`, `implements`, `override`, generics,
 `satisfies`, `#private` fields, and type-only everything.
+
+### Three things the flag does not catch
+
+**Decorators typecheck cleanly.** `erasableSyntaxOnly` has no opinion on them — verified
+against tsc 6.0.3, which accepts a standard (Stage 3) decorator with no flags and reports
+nothing. Node then refuses to parse the `@`: `SyntaxError: Invalid or unexpected token`.
+So this one is a convention rather than a gate, and the reason the decorators lesson has no
+exercise at all.
+
+**`accessor x = 0` typechecks and then will not parse.** Auto-accessors are a JavaScript
+proposal rather than TypeScript syntax, so the flag has nothing to say and `tsc --noEmit`
+is silent — but V8 in Node 24.9 rejects the keyword with `SyntaxError: Unexpected
+identifier`, which is a confusing way to find out. Prose only, like decorators.
+
+**`declare` on a class field is legal here, and it runs correctly.** Checked against
+tsc 6.0.3 and Node 24.9: it is not `TS1294`, Node erases the whole declaration, and an
+inherited value survives. It is on this list only because its hazard is a different
+kind — `declare` is a *promise* that something assigns the field, unchecked, exactly
+like a type assertion. Nothing warns you when the promise is broken and you read
+`undefined`. Use it when something outside the constructor really does the assigning,
+and prefer deleting the redundant declaration when the base class already assigns.
 
 ## Notes
 

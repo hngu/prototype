@@ -6,7 +6,7 @@ tags: ['typescript', 'functions', 'objects']
 icon: Fn
 accent: oklch(64% 0.16 200)
 order: 2
-draft: true
+draft: false
 ---
 
 Once you can predict what TypeScript infers, the next thing worth learning is how to

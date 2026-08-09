@@ -6,7 +6,7 @@ tags: ['typescript', 'generics', 'types']
 icon: T<>
 accent: oklch(62% 0.19 300)
 order: 3
-draft: true
+draft: false
 ---
 
 Up to here, types have been things you write down. This course is about types you

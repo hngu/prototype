@@ -226,9 +226,17 @@ export function parseQuizBlock(body: string): ParseResult {
       })
     }
 
+    /* Case-SENSITIVE, deliberately. The check exists to catch an accidentally pasted
+       duplicate, and those are byte-identical — so folding case buys nothing and costs
+       real false positives on a site about a case-sensitive language. A quiz contrasting
+       `Uppercase<'fontSize'>` with `Capitalize<'fontSize'>` needs options that differ
+       only in case, and that is the question, not a mistake.
+
+       Whitespace is still normalised, since trailing spaces are invisible and never
+       meaningful. */
     const seen = new Map<string, number>()
     for (let i = 0; i < choices.length; i++) {
-      const key = choices[i]!.text.toLowerCase()
+      const key = choices[i]!.text.trim().replace(/\s+/g, ' ')
       if (seen.has(key)) {
         issues.push({
           message: `duplicate choice text "${choices[i]!.text}"`,

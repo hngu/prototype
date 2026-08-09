@@ -24,9 +24,9 @@ This file is three things at once:
 | # | Course | id | Level | Lessons | Exercises | `draft` |
 |---|---|---|---|---|---|---|
 | 1 | TypeScript Fundamentals | `typescript-fundamentals` | beginner | **8 / 8** | **8 / 8** | `false` |
-| 2 | Functions and Objects | `typescript-functions-objects` | beginner | 0 / 8 | 0 / 8 | `true` |
-| 3 | Type Manipulation | `typescript-type-manipulation` | intermediate | 0 / 9 | 0 / 9 | `true` |
-| 4 | Classes and Object-Oriented TypeScript | `typescript-classes` | intermediate | 0 / 6 | 0 / 5 | `true` |
+| 2 | Functions and Objects | `typescript-functions-objects` | beginner | **8 / 8** | **8 / 8** | `false` |
+| 3 | Type Manipulation | `typescript-type-manipulation` | intermediate | **9 / 9** | **9 / 9** | `false` |
+| 4 | Classes and Object-Oriented TypeScript | `typescript-classes` | intermediate | **6 / 6** | **5 / 5** | `false` |
 | 5 | Modules and Declaration Files | `typescript-modules-declarations` | advanced | 0 / 8 | 0 / 5 | `true` |
 | 6 | Tooling and Config | `typescript-tooling-config` | advanced | 0 / 7 | 0 / 2 | `true` |
 | 7 | TypeScript in Practice | `typescript-in-practice` | intermediate | 0 / 5 | 0 / 2 | `true` |
@@ -100,30 +100,78 @@ months later.
 
 ## Course 2 — Functions and Objects
 
+**Complete.** Course published (`draft: false`).
+
 | # | Slug | L | E | Docs source | ELI5 angle | Exercise |
 |---|---|---|---|---|---|---|
-| 1 | `function-signatures` | [ ] | [ ] | `2/functions` | A signature is the slot on a vending machine: it says exactly what fits in and what drops out. `void` means "nothing drops out", not "nothing happens". | `retry(fn, times)` with optional, default and rest params typed correctly |
-| 2 | `overloads-and-call-signatures` | [ ] | [ ] | `2/functions#call-signatures`, `#construct-signatures`, `#function-overloads` | One door with several labelled ways through it — and why two doors is usually the better answer. | Overload `parseDate(input: string \| number)`, then rewrite it as a union and compare |
-| 3 | `this-and-callbacks` | [ ] | [ ] | `2/functions#declaring-this-in-a-function`, `utility-types` (`ThisParameterType`, `OmitThisParameter`, `ThisType`) | `this` is whoever is holding the tool, and callbacks change hands constantly. | Type an `on(event, handler)` registry where the handler's `this` is the emitter |
-| 4 | `object-types` | [ ] | [ ] | `2/objects` | A form with required fields, optional fields, and a note saying "you may add extra rows". | Model an HTTP options bag: optional props, `readonly`, and an index signature |
-| 5 | `extending-and-intersections` | [ ] | [ ] | `2/objects#extending-types`, `#intersection-types` | Two ways to combine forms: staple a new page on (`extends`), or demand both at once (`&`). | Build `Timestamped<T>` and `WithId<T>`, then compose them three ways |
-| 6 | `tuples-and-readonly` | [ ] | [ ] | `2/objects#tuple-types`, `#readonly-tuple-types` | An array is a bag. A tuple is a labelled tray with a fixed number of slots. | Type a `zip`, and a `useState`-style `[value, setValue]` return tuple |
-| 7 | `iterators-and-generators` | [ ] | [ ] | `iterators-and-generators` | A generator is a book with a bookmark: it hands you one page and remembers where it stopped. | A `range()` generator, plus a collection with a custom `Symbol.iterator` |
-| 8 | `symbols` | [ ] | [ ] | `symbols` | A symbol is a key cut just for you. Nobody else's key opens that door, even one with the same name written on it. | A registry keyed by `unique symbol`, so two modules cannot collide |
+| 1 | `function-signatures` | [x] | [x] | `2/functions` | A vending machine has a slot and a tray. The two openings tell you everything. | **What fits in, what drops out** — rest params, optional vs default, and a `void` callback |
+| 2 | `overloads-and-call-signatures` | [x] | [x] | `2/functions#call-signatures`, `#construct-signatures`, `#function-overloads` | One box-office window with three signs above it. Which sign you stand under decides what you get. | **One door, several labelled ways through** — `parseDate` overloaded *and* as a union, side by side |
+| 3 | `this-and-callbacks` | [x] | [x] | `2/functions#declaring-this-in-a-function`, `utility-types` (`ThisParameterType`, `OmitThisParameter`, `ThisType` — prose only) | "Pass me that" works across a table and means nothing down the phone. | **Whoever is holding the tool** — an emitter whose handlers see it as `this`, plus `OmitThisParameter` |
+| 4 | `object-types` | [x] | [x] | `2/objects` | Every form has rows you must fill in, rows you may leave blank, and a space at the bottom for anything else. | **A form with optional rows** — an HTTP options bag, and optional-in/required-out |
+| 5 | `extending-and-intersections` | [x] | [x] | `2/objects#extending-types`, `#intersection-types` | Staple an extra page on, or hand over two forms and say fill in both. | **Staple a page on, or demand both** — `WithId<T>` and `Timestamped<T>`, and the conflict `&` hides |
+| 6 | `tuples-and-readonly` | [x] | [x] | `2/objects#tuple-types`, `#readonly-tuple-types` | A bag holds any number of apples. A cutlery tray holds one knife, one fork, one spoon. | **A labelled tray, not a bag** — `zip`, a tuple return, a non-empty tuple, a `useState`-style pair |
+| 7 | `iterators-and-generators` | [x] | [x] | `iterators-and-generators` | A book with a bookmark: read a page, close it, carry on tomorrow. Nobody photocopied the book. | **A book with a bookmark** — `range`, an infinite `naturals`, a lazy `take`, a `Symbol.iterator` |
+| 8 | `symbols` | [x] | [x] | `symbols` | Two flats can both have a door labelled 3B. The labels match and the keys do not. | **A key cut just for you** — a metadata store on `unique symbol` keys |
+
+### Decisions made while writing course 2
+
+- **Course 2 uses simple generics, deliberately, ahead of course 3.** `WithId<T>`,
+  `Iterable<T>`, `Generator<T, …>` and `OmitThisParameter<T>` all appear. Avoiding them
+  would have meant a `retry` that only returns strings and a `zip` fixed to two concrete
+  element types — worse teaching examples for the sake of a rule. Every appearance is
+  **applied, never authored**: the reader consumes a generic type and never writes one,
+  and each first use carries a one-line "course 3 is about these". Course 3 still owns
+  declaring them.
+- **`unique symbol` broke the four-file contract, and the reason is the lesson.**
+  `unique symbol` is TypeScript's only *nominal* type, so `starter.ts` and `solution.ts`
+  cannot each declare their own keys — the API-parity check fails with TS2322, correctly,
+  because they really are different keys. Lesson 2.8's exercise therefore has a fifth
+  file, `keys.ts`, shared by all three. Verified: the manifest gate only checks that the
+  four required files are *present*, so extras pass. `REQUIRED_FILES` did not need
+  changing. Any future exercise exporting a `unique symbol` needs the same shape.
+- **Overloads, construct signatures and call-signature interfaces are all erasable.**
+  Probed before writing lesson 2.2 rather than assumed: overload signatures with no body,
+  `new (v: number) => T`, and an interface carrying both a call signature and properties
+  all pass `erasableSyntaxOnly` and run under Node's type stripping.
+- **`@ts-expect-error` is now the standard way this track pins down a *cost*.** Course 2
+  uses it for the things that are supposed to be refused — an overloaded function rejecting
+  the union its body handles, an arrow function failing a construct signature, `headline([])`
+  on a non-empty tuple, writing through a `readonly` index signature, a forged `unique symbol`.
+  Several tests then assert the runtime *did* the thing the compiler forbade, because
+  `readonly` is erased; that pairing is worth keeping.
+- **A draft course's lesson pages are not built in production**, so `loadExerciseFor` and
+  `check:build` never see them. Authoring a draft course therefore needs a temporary
+  `draft: false` flip around each `verify` to check the exercise card actually renders —
+  otherwise the first real validation is the publish flip at the end of the phase. Done at
+  every lesson boundary in this phase.
+- **Every test must touch `subject`.** A purely type-level test passes under
+  `attempt`, which makes the learner's red run confusing ("why did one pass?"). Fold
+  compile-only assertions into a test that also exercises the implementation.
+- **YAML frontmatter, again:** a `summary` starting with a backtick needs quoting — a
+  leading backtick is a reserved YAML indicator and the error reads "bad indentation of a
+  mapping entry", which sounds like anything but a quoting problem. By contrast a
+  malformed quiz option (`- []` for `- [ ]`) is caught cleanly by `check:content` with the
+  file and line — verified.
+- **`ThisType<T>` is covered in prose only** (lesson 2.3), not exercised. A realistic use
+  needs a generic `ObjectDescriptor<D, M>`-shaped helper, which is course 3 material, and
+  the utility is one you read far more often than you write. `ThisParameterType` and
+  `OmitThisParameter` are both exercised.
 
 ## Course 3 — Type Manipulation
 
+**Complete.** Course published (`draft: false`).
+
 | # | Slug | L | E | Docs source | ELI5 angle | Exercise |
 |---|---|---|---|---|---|---|
-| 1 | `generics` | [ ] | [ ] | `2/generics`, `2/types-from-types` | A recipe that works for any ingredient, and remembers which one you used. | `first<T>`, `last<T>`, and a typed `identityCache<T>` |
-| 2 | `constraints-and-defaults` | [ ] | [ ] | `2/generics#generic-constraints`, `#generic-parameter-defaults` | "Any ingredient" is too generous. A constraint is the sign saying "must fit through this door". | `pluck<T, K extends keyof T>(items, key)` |
-| 3 | `keyof-and-typeof` | [ ] | [ ] | `2/keyof-types`, `2/typeof-types` | Two X-rays: one shows an object's key names, the other shows a value's type. | Derive a `Mode` union from a config object using `keyof typeof` |
-| 4 | `indexed-access-types` | [ ] | [ ] | `2/indexed-access-types` | Reaching into a *type* with square brackets, the same way you reach into a value. | Extract a nested field's type out of an API response type without redeclaring it |
-| 5 | `conditional-types` | [ ] | [ ] | `2/conditional-types` | An if-statement that runs in the type system, at compile time, and produces a type. | `Unwrap<T>` with `infer`, plus a distributive `NonNullableDeep<T>` |
-| 6 | `mapped-types` | [ ] | [ ] | `2/mapped-types` | Walk every key of a type and rewrite each one, like relabelling every jar in a cupboard. | Hand-roll `Partial` and `Readonly`, then a `Getters<T>` using `as` key remapping |
-| 7 | `template-literal-types` | [ ] | [ ] | `2/template-literal-types`, `utility-types` (`Uppercase`, `Lowercase`, `Capitalize`, `Uncapitalize`) | String templates whose result is a *type*, so a typo becomes a compile error. | `EventName<T>` producing `` `on${Capitalize<K>}` `` for every key |
-| 8 | `utility-types-objects` | [ ] | [ ] | `utility-types` (`Partial`, `Required`, `Readonly`, `Record`, `Pick`, `Omit`) | The standard-issue toolkit. You already know how each one is built. | Refactor a hand-written set of helper types down to `Pick` / `Omit` / `Record` |
-| 9 | `utility-types-unions-functions` | [ ] | [ ] | `utility-types` (`Exclude`, `Extract`, `NonNullable`, `Parameters`, `ConstructorParameters`, `ReturnType`, `InstanceType`, `Awaited`) | X-rays for a union and for a function — read a type off something that already exists instead of writing it twice. | Derive an API client's argument and result types from its function types alone |
+| 1 | `generics` | [x] | [x] | `2/generics`, `2/types-from-types` | A recipe for jam is the same recipe whichever fruit you use — but the label has to say *plum*. | **One recipe, any ingredient** — `first`/`last`, a two-parameter `pairUp`, a `Cache<T>` and `cached` |
+| 2 | `constraints-and-defaults` | [x] | [x] | `2/generics#generic-constraints`, `#generic-parameter-defaults` | *You must be taller than this line.* It does not make you exactly that tall — you get on the ride as yourself. | **Must fit through this door** — `pluck<T, K>`, `byId`, `longest`, a parameter default |
+| 3 | `keyof-and-typeof` | [x] | [x] | `2/keyof-types`, `2/typeof-types` | Two machines: one photographs the label, one photographs the contents. | **Two X-rays** — a `Mode` union derived from a `const` object, plus the justified `Object.keys` cast |
+| 4 | `indexed-access-types` | [x] | [x] | `2/indexed-access-types` | *Use the flour from the third jar on the second shelf* — so reorganising the pantry updates the recipe. | **Reaching into a type** — nested access, `[number]`, and `User[K]` |
+| 5 | `conditional-types` | [x] | [x] | `2/conditional-types` | You cannot ask "was it raining?" about a whole week and get one answer. | **An if-statement for types** — recursive `Unwrap`, `infer`, and distributive vs non-distributive |
+| 6 | `mapped-types` | [x] | [x] | `2/mapped-types` | A cupboard of jars and one rule: put a *maybe* sticker on every lid. | **Relabel every jar** — hand-rolled `Partial`/`Required`/`Readonly`, then `Getters<T>` and its runtime counterpart |
+| 7 | `template-literal-types` | [x] | [x] | `2/template-literal-types`, `utility-types` (the four string intrinsics) | A postcode is not just text. `CB1 2AB` fits and `banana` does not. | **A type made of string** — a `Route` pattern, `Handlers<T>`, and all four intrinsics |
+| 8 | `utility-types-objects` | [x] | [x] | `utility-types` (`Partial`, `Required`, `Readonly`, `Record`, `Pick`, `Omit`) | A toolbox holds nothing you could not have made — just the six things worth not making again. | **The standard-issue toolkit** — hand-rolled `Pick`/`Omit`/`Record`, and the `Partial`-spread bug |
+| 9 | `utility-types-unions-functions` | [x] | [x] | `utility-types` (`Exclude`, `Extract`, `NonNullable`, `Parameters`, `ConstructorParameters`, `ReturnType`, `InstanceType`, `Awaited`) | A locksmith does not measure your hand. They look at the lock. | **Read the types off what exists** — an API client whose args and results are all derived |
 
 **Why utility types are two lessons.** `/docs/handbook/utility-types.html` documents 22
 utilities; that does not fit one 8–12 minute lesson with three quizzes without becoming
@@ -137,19 +185,130 @@ docs themselves introduce them and where the exercise already uses `Capitalize` 
 not "close the gap" by duplicating them in lesson 8 or 9. The three `this` helpers live
 in **2.3**, next to `this`.
 
+### Decisions made while writing course 3
+
+- **The two exercise patterns worked, and both are now proven.** Pattern A (learner
+  authors the type, `starter.ts` carries an `Expect<Equals<…>>` self-check, placeholder
+  delegates to the built-in) was verified by replacing `MyPartial` with the classic wrong
+  answer `{ [K in keyof T]: T[K] | undefined }` — `typecheck` failed at `starter.ts:41`.
+  Its honest limitation is stated in the exercise README: it tells the learner whether
+  what they wrote is *correct*, not whether they wrote anything, because the delegating
+  placeholder is itself a correct answer.
+- **`tools/type-assert.ts` is new**, holding `Equals`, `Expect` and `Extends`. Shared
+  rather than copied because `Equals` is easy to get subtly wrong — a version that passes
+  vacuously would stop checking anything, silently. Imported by nine exercises.
+- **`assert.deepEqual` narrows its first argument.** It is declared `asserts actual is T`
+  in `@types/node`, so a `type _x = Expect<Equals<typeof value, …>>` placed *after* it
+  checks the narrowed type rather than the returned one. Type assertions go before the
+  runtime ones. Cost one debugging round on 3.2.
+- **`@ts-expect-error` silences the type error and the code still runs.** A rejected call
+  that would throw — `callEndpoint(client, 'patchUser', …)` — has to live in a closure that
+  is never invoked. Same for anything whose runtime effect would break a later assertion:
+  3.4's `readonly` write lands, because `readonly` is erased.
+- **`parseBrief` requires an exact `## Goal` heading.** `## Goal, in two halves` failed the
+  build with a clear message from `loadExerciseFor` — the gate working, but worth knowing
+  before writing a two-part brief.
+- **Two build gates were changed this phase, both deliberately:**
+  - `scripts/check-content.ts` gained a **frontmatter lint** for values starting with a
+    YAML-reserved character. An unquoted `summary: \`keyof\` reads …` fails `astro check`
+    with "bad indentation of a mapping entry", which sounds like anything but a quoting
+    problem. It had cost time twice by then. Tested both ways.
+  - `quiz-parse.ts`'s duplicate-choice check is now **case-sensitive**. It was folding case,
+    which is a reasonable heuristic in prose and wrong on a site about a case-sensitive
+    language: a quiz contrasting `Uppercase<'fontSize'>` with `Capitalize<'fontSize'>`
+    *needs* options differing only in case. Real accidental duplicates are byte-identical,
+    so nothing was lost; whitespace is still normalised, and a negative test confirms a
+    genuine duplicate still fails. (A first false positive in 3.3 was worked around by
+    rewording; the second, in 3.7, could not be reworded without gutting the question.)
+
 ## Course 4 — Classes and Object-Oriented TypeScript
+
+**Complete.** Course published (`draft: false`).
 
 Every exercise here is authored under `erasableSyntaxOnly`. The prose still teaches the
 banned forms in full; only the runnable code avoids them.
 
 | # | Slug | L | E | Docs source | ELI5 angle | Exercise |
 |---|---|---|---|---|---|---|
-| 1 | `classes-and-members` | [ ] | [ ] | `2/classes` | A cookie cutter with a checklist of what every cookie must have. | A `Stack<T>` — fields **declared, then assigned in the constructor body** (parameter properties are not erasable) |
-| 2 | `visibility-and-static` | [ ] | [ ] | `2/classes#member-visibility`, `#static-members` | `private` is a "staff only" sign. `#private` is an actual lock. | A `Counter` with `#count` and a `static from()` — the lesson turns "why not `private`?" into the erasability point |
-| 3 | `inheritance-and-abstract` | [ ] | [ ] | `2/classes#class-heritage` | `extends` inherits the machine; `implements` only signs the contract. | An `abstract class Shape` with two subclasses, under `noImplicitOverride` |
-| 4 | `generic-classes-and-this` | [ ] | [ ] | `2/classes#generic-classes`, `#this-types` | `this` as a return type is how a chainable builder keeps its own identity through a subclass. | A chainable `QueryBuilder` returning `this` |
-| 5 | `decorators` | [ ] | — | `decorators` | A sticky note on a method that the machine reads before running it. | **No exercise** — decorators need code generation; Node's type stripping cannot run them. The lesson says so on the page. |
-| 6 | `mixins` | [ ] | [ ] | `mixins` | Bolting an extra ability onto a class without rewriting the class. | `Serializable` and `Comparable` mixins composed onto one base class |
+| 1 | `classes-and-members` | [x] | [x] | `2/classes` | A cookie cutter makes cookies the same shape every time. You do not inspect each one to find out whether it came out star-shaped. | **A cutter and a checklist** — a bounded `Stack<T>` with fields declared then assigned, getters, `snapshot()` and `static of<U>()` |
+| 2 | `visibility-and-static` | [x] | [x] | `2/classes#member-visibility`, `#static-members` | A door marked *staff only* keeps out everyone who reads the signs. A lock keeps out everyone. | **A sign and a lock** — a `Counter` with `#count`, a `private label`, `static #created`, `static from()` and an `isCounter` brand check |
+| 3 | `inheritance-and-abstract` | [x] | [x] | `2/classes#class-heritage` | Inheriting a bakery gets you the ovens. Signing a form saying you can bake gets you an obligation. | **Inherit the machine, sign the form** — `abstract class Shape`, `Square`/`Circle`, `largestFirst` and a `Describable`-only consumer |
+| 4 | `generic-classes-and-this` | [x] | [x] | `2/classes#generic-classes`, `#this-types` | A conversation goes wrong the moment one reply forgets who was talking. | **Chains that remember what they are** — a generic `QueryBuilder<T>`/`PagedQuery<T>` returning `this`, plus `clone()` |
+| 5 | `decorators` | [x] | — | `decorators` | Somebody sticks a note on the office kettle. The kettle has not changed, but everyone who reaches for it does one extra thing. | **No exercise** — decorators need code generation and Node's type stripping refuses to parse them. The lesson says so on the page, and says that no compiler flag warns you |
+| 6 | `mixins` | [x] | [x] | `mixins` | You cannot fit a second engine in a car with one engine bay. You can bolt on a roof rack. | **Bolt an ability on** — `withSerializable` and `withTimestamp` composed onto `Note`, consumed through their interfaces |
+
+The plan named the two mixins `Serializable` and `Comparable`. `Comparable` was replaced by
+`Timestamped`, because a comparison mixin has nothing to do at construction time and so
+demonstrates the one thing a plain function genuinely cannot do — participate in `this`,
+`super`, construction and `instanceof`. Lesson 6's closing argument is that most abilities
+should *not* be mixins, and it needed an example that earns it.
+
+### Decisions made while writing course 4
+
+- **Classes broke the whole-module parity check, and the fix is now the course's pattern.**
+  A class with a `private` or `protected` member is nominal, so two identical `Stack`s
+  declared in two files are never mutually assignable — `#items` in one "refers to a
+  different member". The usual `const _a: typeof solution = starter` fails in both
+  directions. Four of the five exercises therefore declare the API **once** in the test
+  file (`StackApi`/`StackCtor`, `CounterApi`, `ShapeApi`, `BuilderApi`) and check both files
+  against it with a single annotation on `subject`. That annotation is doubly load-bearing:
+  without it `subject` is a union of two module types and `new subject.Stack(…)` is a call on
+  a union of construct signatures, which is not allowed. A dropped or retyped member still
+  fails to compile, which is what parity was for. `mixins` is the one exercise with no
+  hidden members, and it keeps the original bidirectional check.
+- **Contract members must use method syntax.** `largestFirst: (shapes: readonly ShapeApi[])
+  => …` is checked contravariantly under `strictFunctionTypes` and fails; the method form
+  `largestFirst(shapes: readonly ShapeApi[]): …` is bivariant and passes. Same trick needed
+  for `isLargerThan`.
+- **A derived-class constructor stub cannot be a bare `throw`.** `TS2377` requires a `super`
+  call, so 4.3's subclass stubs ship with `super('square')` already in them and a comment
+  saying why. Definite assignment is still satisfied, because a constructor that always
+  throws has no completing path.
+- **Three corrections to `src/exercises/README.md`, all verified rather than reasoned:**
+  - **`declare` on a class field is legal under `erasableSyntaxOnly` and runs correctly.**
+    The README claimed it was banned and "erased, then read". Neither is true on tsc 6.0.3 /
+    Node 24.9: it is not `TS1294`, the whole declaration is erased, and an inherited value
+    survives. Its hazard is real but different in kind — an unchecked promise, like a type
+    assertion — so it moved out of the enforcement table into its own note.
+  - **`erasableSyntaxOnly` does not catch decorators.** `tsc --noEmit` is completely silent
+    on a standard decorator; Node then fails at the parser with `SyntaxError: Invalid or
+    unexpected token`. The plan's §5 assumed the flag moved this to authoring time. It does
+    not, and lesson 4.5 says so on the page.
+  - **`accessor x = 0` typechecks and will not parse.** Auto-accessors are a JavaScript
+    proposal rather than TypeScript syntax, so the flag has no opinion, and V8 in Node 24.9
+    rejects the keyword. Prose only, like decorators.
+  The table is now headed "Not usable in exercise code / Why / Enforced by", with the last
+  column naming `TS1294`, `verbatimModuleSyntax`, `include`, or **nothing**. Four rows are
+  enforced and three are conventions, which the old framing hid.
+- **`T extends Record<string, unknown>` is a weaker constraint than it looks**, and it cost
+  two `@ts-expect-error` directives in 4.4 before it was spotted. A caller satisfying it the
+  obvious way — `interface User extends Row` — inherits the index signature, `keyof User`
+  widens to all of `string`, and every column check silently passes. An object **type alias**
+  satisfies the constraint through an *implicit* index signature that never becomes part of
+  the type, so `keyof` stays narrow. This is now 4.4's third concept section and its quiz;
+  the same rule explains why `{ ...this }` needs a cast to `Record<string, unknown>` in 4.6.
+- **Redeclaring an inherited field wipes it, and tsc catches it.** Verified: the bare
+  redeclaration runs after `super()` and resets the field to `undefined`, and `TS2612` reports
+  it with the fix — "add an initializer, add a 'declare' modifier, or remove the redundant
+  declaration". Worth noting that of those three, `declare` is the one that reintroduces the
+  silent-`undefined` risk it just prevented. Lesson 4.3's third section.
+- **Writing to a getter-only or frozen property throws.** Modules are always strict mode, so
+  an `@ts-expect-error`'d assignment does not fail quietly — it is a `TypeError`. Three tests
+  across 4.1 and 4.2 assert the throw rather than the silent no-op, after the first drafts
+  claimed the wrong thing and failed. Related and now four phases old: `@ts-expect-error`
+  silences the type error and the code still runs, so anything with a runtime effect goes in
+  a never-invoked closure.
+- **One `attempt`-green test had to be folded in.** 4.6's "outermost mixin wins" test used
+  only the given `Note` and local mixins, so it passed under `attempt` and muddied the
+  learner's red run. It now also exercises `withSerializable`.
+- **Mixin composition order does not change `serialize()` output**, contrary to the first
+  draft of the exercise. `{ ...this }` reflects own enumerable properties at call time, and
+  by then every field exists whichever mixin ran first — checked both ways. Order matters
+  only when two mixins define the same member, and that is what the test demonstrates.
+- **`Constructor<T>` is `new`, not `abstract new`.** Widening it would allow abstract bases,
+  but `TS2797` then requires the returned class to be `abstract` too, and an abstract class
+  cannot be constructed — so the composed result needs a further concrete wrapper. Documented
+  in the exercise rather than paid for.
 
 ## Course 5 — Modules and Declaration Files
 
@@ -324,25 +483,53 @@ Stated rather than silently dropped.
 
 Two things deliberately left undecided rather than settled speculatively.
 
-**Type-level exercises (affects most of Course 3).** `solution.test.ts` asserts that
-`typeof starter` and `typeof solution` are mutually assignable, which is what lets one
-set of tests grade either file. The consequence is that `starter.ts` must already carry
-the correct *types* — so the learner's work can only be implementations. That is fine
-for Course 1, but a lesson whose entire point is a type (`Unwrap<T>`, a mapped type)
-has no runtime behaviour to assert. Needs deciding at Course 3, with options including
-a relaxed parity check, `// @ts-expect-error` assertions, or a separate
-`tsc --noEmit` pass over starters. Do not invent machinery for it before then.
+**~~Type-level exercises~~ — SETTLED at the start of Phase 3.** No new machinery, no
+relaxed parity check, no second tsconfig. Three facts, each verified against tsc 6.0.3
+before any of Course 3 was written:
 
-> **Evidence from Course 1, which narrows this.** Three lessons now assert type-level
-> facts inside ordinary test files using `@ts-expect-error`, and it works well: it
-> fails the build both when the line errors unexpectedly *and* when it stops erroring,
-> so the claim cannot rot, and it needs no new machinery at all. What it cannot do is
-> assert that two types are *equal* — only that an expression is rejected. Course 3
-> most likely needs `@ts-expect-error` for the negative cases plus mutual-assignability
-> pairs (`const _a: X = y; const _b: typeof y = x`) for the positive ones, both of which
-> are already in use here. That is probably the whole answer, with no relaxed parity
-> check and no second tsc pass — but confirm it against a real mapped-type lesson before
-> committing.
+1. **Type-only exports are not part of `typeof module`.** The API-parity check compares
+   the module's *value* namespace, so `starter.ts` and `solution.ts` may export
+   genuinely different type aliases and parity still holds. The premise of the original
+   question was wrong.
+2. **The `Equals` trick works**, and rejects wrong answers rather than passing
+   vacuously — including telling `{ a?: string }` apart from `{ a: string | undefined }`,
+   which is the check people usually get wrong:
+   ```ts
+   type Equals<A, B> = (<G>() => G extends A ? 1 : 2) extends <G>() => G extends B ? 1 : 2
+     ? true
+     : false
+   type Expect<T extends true> = T
+   ```
+3. **A type assertion referencing `starter` cannot live in `solution.test.ts`.** It would
+   be red on a fresh clone, breaking the second invariant. It has to live in `starter.ts`
+   itself, where the placeholder can satisfy it.
+
+That gives two patterns, and every Course 3 lesson uses one of them:
+
+**Pattern A — re-derive a type, graded by `typecheck`.** The learner authors the type in
+`starter.ts`, which carries its own `Expect<Equals<…>>` self-check. The placeholder is a
+legal *cheat* that satisfies the assertion, so a fresh clone is green:
+
+```ts
+// TODO: express this as a mapped type instead of delegating.
+export type MyPartial<T> = Partial<T>
+type _check = Expect<Equals<MyPartial<Settings>, Partial<Settings>>>
+```
+
+Replace the cheat with a real mapped type and the assertion still has to hold — so
+`pnpm --filter exercises typecheck` is the grader, and it names the file and line. Used
+where a built-in or a concrete target exists to check against: **3.6** and **3.8**,
+which are exactly the lessons whose point is "you already know how these are built".
+
+**Pattern B — write the runtime counterpart, graded by `attempt`.** The type is given
+identically in both files and the exercise is the code that produces a value of exactly
+that shape. This is what real code does — a mapped type is usually the reason a
+`Object.fromEntries` cast is safe — and it cannot be written without understanding the
+type precisely. `solution.test.ts` proves the given type is right with `Equals` against
+`solution`. Used in **3.3, 3.4, 3.5, 3.7, 3.9**.
+
+**3.1 and 3.2 need neither.** A generic *function* has its signature given and its body
+as the work, which the existing machinery already grades.
 
 **`allowJs` / `checkJs` (affects 7.1, and would make it 40 exercises).** Course 7 is
 about JavaScript interop, and two of its lessons would naturally exercise a `.js` file.
