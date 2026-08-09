@@ -25,7 +25,7 @@ pnpm --filter elearning og             # regenerate public/og-default.png
 Exercises live in a sibling package with its own commands — see
 [Exercises](#exercises) and [`src/exercises/README.md`](../exercises/README.md).
 
-The whole TypeScript track — 7 courses, 51 lessons, which docs page each one covers, and what is
+The whole TypeScript track — 6 courses, 46 lessons, which docs page each one covers, and what is
 still unwritten — is mapped in **[CURRICULUM.md](./CURRICULUM.md)**. Start there before authoring.
 
 ---

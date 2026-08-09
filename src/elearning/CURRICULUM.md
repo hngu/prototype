@@ -1,6 +1,6 @@
 # TypeScript track — curriculum
 
-**7 courses · 51 lessons · 39 exercises.** Derived from the official documentation at
+**6 courses · 46 lessons · 37 exercises.** Derived from the official documentation at
 <https://www.typescriptlang.org/docs/>.
 
 > **Docs snapshot: 2026-08-08**, against the TypeScript **6.0** docs.
@@ -14,7 +14,7 @@ This file is three things at once:
    picked up months later without re-deriving where it stands.
 2. **The coverage audit.** One row per docs page, mapped to the lesson that owns it.
    A page with no lesson is a visible hole rather than something you have to notice.
-3. **The authoring spec.** The lesson template at the bottom, so courses 2–7 are
+3. **The authoring spec.** The lesson template at the bottom, so courses 2–6 are
    mechanical rather than a fresh judgement call each time.
 
 ---
@@ -29,7 +29,6 @@ This file is three things at once:
 | 4 | Classes and Object-Oriented TypeScript | `typescript-classes` | intermediate | **6 / 6** | **5 / 5** | `false` |
 | 5 | Modules and Declaration Files | `typescript-modules-declarations` | advanced | 0 / 8 | 0 / 5 | `true` |
 | 6 | Tooling and Config | `typescript-tooling-config` | advanced | 0 / 7 | 0 / 2 | `true` |
-| 7 | TypeScript in Practice | `typescript-in-practice` | intermediate | 0 / 5 | 0 / 2 | `true` |
 
 **A course stays `draft: true` until every lesson in it is written and reviewed.**
 Drafts are visible in `astro dev` and never built in production (`getPublishedCourses`
@@ -338,16 +337,6 @@ should *not* be mixins, and it needed an example that earns it.
 Lesson 4 is the best exercise in the track, and it exists *because* of the constraint
 the exercises are authored under. See `src/exercises/README.md`.
 
-## Course 7 — TypeScript in Practice
-
-| # | Slug | L | E | Docs source | ELI5 angle | Exercise |
-|---|---|---|---|---|---|---|
-| 1 | `type-checking-javascript` | [ ] | — | `intro-to-js-ts`, `type-checking-javascript-files` | You can turn the lights on in a `.js` file without renaming it. | **No exercise** — would need `allowJs` + `checkJs` in the shared exercises tsconfig. See [Open questions](#open-questions) |
-| 2 | `jsdoc-and-dts-from-js` | [ ] | [ ] | `jsdoc-supported-types`, `declaration-files/dts-from-js` | Types written in comments still count. | Turn a JSDoc-annotated module's types into a `.d.ts` a `.ts` consumer can rely on |
-| 3 | `migrating-js-to-ts` | [ ] | [ ] | `migrating-from-javascript` | You do not rewrite. You turn the lights on one room at a time. | Finish converting a half-migrated module so it passes under `strict` |
-| 4 | `jsx-and-react-types` | [ ] | — | `jsx` | Your markup gets type-checked too. | **No exercise** — `.tsx` is not type-stripped by Node, so it cannot run under `node --test` |
-| 5 | `dom-manipulation` | [ ] | — | `dom-manipulation` | The browser hands you things that might not be there, and TypeScript is right to be suspicious. | **No exercise** — no DOM in `lib: ["es2024"]`; a per-directory `lib` override for one exercise is not worth a second tsconfig |
-
 ---
 
 ## Coverage matrix
@@ -393,7 +382,6 @@ Every page in the docs navigation as of the snapshot date, and the lesson that o
 | Declaration Merging | 5.5 |
 | Enums | 6.4 |
 | Iterators and Generators | 2.7 |
-| JSX | 7.4 |
 | Mixins | 4.6 |
 | Namespaces | 5.4 |
 | Namespaces and Modules | 5.4 |
@@ -425,22 +413,11 @@ Every page in the docs navigation as of the snapshot date, and the lesson that o
 | Deep Dive | 5.6 |
 | Publishing | 5.8 |
 | Consumption | 5.8 |
-| Creating .d.ts Files from .js files | 7.2 |
-
-### JavaScript
-
-| Docs page | Lesson |
-|---|---|
-| JS Projects Utilizing TypeScript | 7.1 |
-| Type Checking JavaScript Files | 7.1 |
-| JSDoc Reference | 7.2 |
 
 ### Tutorials
 
 | Docs page | Lesson |
 |---|---|
-| DOM Manipulation | 7.5 |
-| Migrating from JavaScript | 7.3 |
 | Using Babel with TypeScript | 6.7 |
 
 ### Project Configuration
@@ -465,23 +442,27 @@ Stated rather than silently dropped.
 | Compiler Options in MSBuild | Specific to the .NET build system; the flags themselves are covered in 6.2 |
 | Cheat Sheets | A PNG/PDF download, not prose. Linked from the course pages instead |
 | The TypeScript Handbook (intro) | An index page with no unique content |
+| All of **JavaScript** — JS Projects Utilizing TypeScript, Type Checking JavaScript Files, JSDoc Reference — plus **Creating .d.ts Files from .js files** and the **Migrating from JavaScript** tutorial | Course 7 was cut. This track teaches people who write `.ts` files, and `allowJs` / `checkJs` / JSDoc-as-types is a migration concern rather than a TypeScript one |
+| JSX | Was 7.4, cut with the course. Also had no possible exercise: `.tsx` is not type-stripped by Node |
+| DOM Manipulation | Was 7.5, cut with the course. Also had no possible exercise: no DOM in `lib: ["es2024"]` |
 
 ## Exercise gaps
 
-39 of 51 lessons carry a runnable exercise. The twelve that do not, grouped by reason:
+37 of 46 lessons carry a runnable exercise. The nine that do not, grouped by reason:
 
-- **Cannot run under Node's type stripping** — 4.5 decorators (needs code generation),
-  7.4 JSX (`.tsx` is not stripped). Both are taught fully in prose with real syntax,
-  and 4.5 explains on the page why the code it just showed you cannot be run here.
+- **Cannot run under Node's type stripping** — 4.5 decorators, which need code
+  generation. Taught fully in prose with real syntax, and the lesson explains on the page
+  why the code it just showed you cannot be run here. Note that no compiler flag catches
+  this: `erasableSyntaxOnly` has no opinion on decorators, verified against tsc 6.0.3.
 - **Config-shaped** — 5.2, 6.1, 6.2, 6.5, 6.6, 6.7. Annotated configuration samples in
   prose instead; 6.5 would additionally need several tsconfigs.
-- **Nothing runnable to assert** — 5.7 (5.6 carries the writing exercise), 5.8
-  (publishing is a registry action), 7.5 (no DOM in `lib: ["es2024"]`).
-- **Blocked on a decision** — 7.1, see below.
+- **Nothing runnable to assert** — 5.7 (5.6 carries the writing exercise) and 5.8,
+  publishing being a registry action.
 
 ## Open questions
 
-Two things deliberately left undecided rather than settled speculatively.
+Both are now resolved. Kept as a record, because the reasoning is the kind of thing
+that gets re-derived from scratch otherwise.
 
 **~~Type-level exercises~~ — SETTLED at the start of Phase 3.** No new machinery, no
 relaxed parity check, no second tsconfig. Three facts, each verified against tsc 6.0.3
@@ -531,16 +512,17 @@ type precisely. `solution.test.ts` proves the given type is right with `Equals` 
 **3.1 and 3.2 need neither.** A generic *function* has its signature given and its body
 as the work, which the existing machinery already grades.
 
-**`allowJs` / `checkJs` (affects 7.1, and would make it 40 exercises).** Course 7 is
-about JavaScript interop, and two of its lessons would naturally exercise a `.js` file.
-The exercises tsconfig deliberately includes only `**/*.ts`. Adding `allowJs` affects
-every exercise's typecheck, so it is a Course 7 decision, not a Course 1 one.
+**~~`allowJs` / `checkJs`~~ — MOOT.** This existed only for Course 7, whose two
+JavaScript-interop exercises would have wanted a `.js` file in a package whose tsconfig
+includes `**/*.ts` and nothing else. Course 7 was cut, so no exercise needs `allowJs` and
+the flag stays off. Worth keeping the note: turning it on affects *every* exercise's
+typecheck, so it was never a per-directory decision.
 
 ---
 
 ## Lesson template
 
-Copy this shape. It is what keeps 51 lessons consistent without re-deciding structure
+Copy this shape. It is what keeps 46 lessons consistent without re-deciding structure
 each time.
 
 ````markdown
