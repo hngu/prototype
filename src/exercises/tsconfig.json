@@ -11,12 +11,22 @@
     "types": ["node"],
 
     /* Node's type stripping DELETES types; it does not compile them. Anything
-       that needs codegen — enum, namespace, parameter properties, `declare`
-       class fields, decorators, `export =` — parses fine and then fails at
-       runtime, and the parameter-property case fails *silently* as `undefined`.
+       that needs codegen parses fine and then fails at runtime, and the
+       parameter-property case fails *silently* as `undefined`.
        `erasableSyntaxOnly` moves that failure to authoring time, where it is a
        tsc error on the offending line instead of a mystery in CI.
        This is the single most important flag in this file.
+
+       It catches `enum`, `namespace`, parameter properties and `export =` in
+       emitting files. Verified during course 4 that it does NOT catch three
+       things people assume it does: decorators (tsc is silent, then Node fails
+       at the parser), `accessor` (a JS proposal, so the flag has no view), and
+       `declare` class fields — which are in fact legal here and erase
+       correctly. Those three are conventions, not gates.
+
+       Note also that the flag skips files that emit nothing, so `export =` IS
+       allowed in a `.d.ts` / `.d.cts` — which is what makes it possible to
+       declare a CommonJS module properly. Course 5 exercises that.
        See README.md, "The erasable-syntax rule". */
     "erasableSyntaxOnly": true,
 

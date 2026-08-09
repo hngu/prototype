@@ -6,7 +6,7 @@ tags: ['typescript', 'modules', 'declaration-files']
 icon: mod
 accent: oklch(65% 0.16 60)
 order: 5
-draft: true
+draft: false
 ---
 
 This is the course about everything outside your own file.

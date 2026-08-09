@@ -27,8 +27,13 @@ This file is three things at once:
 | 2 | Functions and Objects | `typescript-functions-objects` | beginner | **8 / 8** | **8 / 8** | `false` |
 | 3 | Type Manipulation | `typescript-type-manipulation` | intermediate | **9 / 9** | **9 / 9** | `false` |
 | 4 | Classes and Object-Oriented TypeScript | `typescript-classes` | intermediate | **6 / 6** | **5 / 5** | `false` |
-| 5 | Modules and Declaration Files | `typescript-modules-declarations` | advanced | 0 / 8 | 0 / 5 | `true` |
-| 6 | Tooling and Config | `typescript-tooling-config` | advanced | 0 / 7 | 0 / 2 | `true` |
+| 5 | Modules and Declaration Files | `typescript-modules-declarations` | advanced | **8 / 8** | **5 / 5** | `false` |
+| 6 | Tooling and Config | `typescript-tooling-config` | advanced | **7 / 7** | **2 / 2** | `false` |
+
+**The track is complete.** All six courses are published, and every lesson and exercise
+box below is ticked. What remains useful in this file is the coverage audit, the decisions
+recorded per course, and the authoring spec — a seventh course, or a rewrite after a
+`TYPESCRIPT_VERSION` bump, starts from those.
 
 **A course stays `draft: true` until every lesson in it is written and reviewed.**
 Drafts are visible in `astro dev` and never built in production (`getPublishedCourses`
@@ -311,31 +316,115 @@ should *not* be mixins, and it needed an example that earns it.
 
 ## Course 5 — Modules and Declaration Files
 
+**Complete.** Course published (`draft: false`).
+
 | # | Slug | L | E | Docs source | ELI5 angle | Exercise |
 |---|---|---|---|---|---|---|
-| 1 | `modules` | [ ] | [ ] | `2/modules`, `modules/introduction` | A file is a room with a door. `export` decides what leaves. `import type` says "I only want the blueprint, not the furniture". | Split one file into three modules, with `import type` where `verbatimModuleSyntax` requires it |
-| 2 | `module-resolution` | [ ] | — | `modules/theory`, `modules/reference` | How the compiler plays hide-and-seek to find `./thing`, and why the extension is not optional on Node. | **No exercise** — resolution is a config concern; the lesson uses annotated `tsconfig` samples |
-| 3 | `esm-cjs-interop` | [ ] | [ ] | `modules/appendices/esm-cjs-interop` | Two dialects for the same idea, and the phrasebook between them. | A `loadConfig` that copes with both a `{ default: … }` shape and a bare export |
-| 4 | `namespaces-and-legacy` | [ ] | [ ] | `namespaces`, `namespaces-and-modules`, `triple-slash-directives` | Filing cabinets from before folders existed — and how to move house. | Convert namespace-style nested code into modules (the `namespace` itself appears only in prose) |
-| 5 | `declaration-merging` | [ ] | [ ] | `declaration-merging` | Two people writing on the same page, and the page keeping both. | Merge an interface across two files and implement both halves |
-| 6 | `writing-declaration-files` | [ ] | [ ] | `declaration-files/introduction`, `by-example`, `do-s-and-don-ts`, `deep-dive` | A `.d.ts` is a museum label for something you are not allowed to touch. | Write a `.d.ts` for an untyped JS helper, then consume it type-safely |
-| 7 | `dts-shapes-and-templates` | [ ] | — | `declaration-files/library-structures`, all six `templates/*` | Six shapes a library can have, and the label that fits each one. | **No exercise** — 5.6 already carries the writing exercise; this is a reference tour |
-| 8 | `publishing-and-consuming-types` | [ ] | — | `declaration-files/publishing`, `consumption` | Getting your labels into somebody else's museum. | **No exercise** — publishing is a registry action, not something a test can assert |
+| 1 | `modules` | [x] | [x] | `2/modules`, `modules/introduction` | A house has rooms. It also has a front door, and the front door is not a list of every room. | **One door onto three rooms** — write a barrel over three given submodules, with `export type` where `verbatimModuleSyntax` demands it, plus a default re-exported under a name |
+| 2 | `module-resolution` | [x] | — | `modules/theory`, `modules/reference` | You ask for the blue folder. There are three, one is more green, and the one you meant is in another building. | **No exercise** — config-shaped; annotated `tsconfig` and `package.json` samples in prose |
+| 3 | `esm-cjs-interop` | [x] | [x] | `modules/appendices/esm-cjs-interop` | Two people describing the same building, one from the front door and one from the car park. | **Two dialects, one phrasebook** — `unwrapDefault`, plus a facade over two **real** `.cjs` fixtures with their own `.d.cts` |
+| 4 | `namespaces-and-legacy` | [x] | [x] | `namespaces`, `namespaces-and-modules`, `triple-slash-directives` | Before buildings had folders they had filing cabinets: drawers inside drawers, a label on each. | **Moving house** — flatten a namespace-shaped object into modules, then a deprecated shim holding references so the migration can be incremental |
+| 5 | `declaration-merging` | [x] | [x] | `declaration-merging` | Two people write on the same page and the page keeps both. | **Two people, one page** — augment a library's `PluginContext`, merge a local interface, then supply the values the claims promised |
+| 6 | `writing-declaration-files` | [x] | [x] | `declaration-files/introduction`, `by-example`, `do-s-and-don-ts`, `deep-dive` | A museum label. Nobody checks it against the exhibit, and everyone believes it. | **A label on something you cannot touch** — consume a real untyped `.js` through a worked-example `.d.ts`, narrowing its honest `unknown` at the boundary |
+| 7 | `dts-shapes-and-templates` | [x] | — | `declaration-files/library-structures`, all six `templates/*` | A locksmith works out what kind of lock it is first. There are not many kinds. | **No exercise** — 5.6 carries the writing exercise; this is the reference tour |
+| 8 | `publishing-and-consuming-types` | [x] | — | `declaration-files/publishing`, `consumption` | The labels have to survive being boxed up and unpacked by someone whose museum is arranged differently. | **No exercise** — publishing is a registry action, and the failure modes are `package.json` shaped |
+
+### Decisions made while writing course 5
+
+Probed before designing anything, because four of the five exercises needed mechanisms this
+package had never used. All five worked, so no lesson had to be reshaped — but two probe
+results changed what got written.
+
+- **Everything course 5 needed is possible here.** Verified against tsc 6.0.3 / Node 24.9: a
+  real `.cjs` import with a `.d.cts` beside it; `declare module './x.ts'` merging across
+  files; a `.d.ts` describing a plain `.js` **without** `allowJs`; and `declare global`. The
+  exercises use genuine CommonJS and genuine untyped JavaScript rather than simulations.
+- **`export =` is legal in a `.d.ts` under `erasableSyntaxOnly`.** The flag skips files that
+  emit nothing. That is what makes it possible to describe `module.exports = fn` properly, and
+  it is the one place in this package where the banned syntax is correct. Noted in the
+  tsconfig comment as well, since that is where someone will look.
+- **`createRequire`'s `require()` returns `any`.** The `.d.cts` is never consulted, so it is a
+  total type hole — asserted in 5.3 with `Expect<Equals<typeof legacy, any>>` and a call with
+  deliberate nonsense that compiles. Worth knowing before reaching for it as "the easy way to
+  load CommonJS".
+- **The 5.3 fixture reproduced the real interop hazard by accident, and it was kept.**
+  `module.exports = { DEFAULTS, load, describe, version: '1.4.2' }` — Node's `cjs-module-lexer`
+  reports the three shorthand properties and **not** `version`, whose value is a literal. So
+  `import { version }` typechecks (the `.d.cts` is correct, the property does exist) and Node
+  refuses to load the file: `SyntaxError: Named export 'version' not found`. `legacyVersion`
+  was added to the exercise specifically to force the default-import route.
+- **An augmentation with required members breaks the library's own code**, discovered by doing
+  it: `core.ts` stopped compiling with `TS2739` because it could no longer construct its own
+  `PluginContext`. `core.ts` was restructured into the shape real libraries use — a concrete
+  `PluginContextBase` the host builds, and an empty `PluginContext extends PluginContextBase`
+  for consumers to add to — and lesson 5.5 teaches that as the fix.
+- **A mistyped augmentation specifier is completely silent.** `declare module './core-typo.ts'`
+  produces no error on that line at all; TypeScript reads it as declaring a new ambient module.
+  The only symptom is `Property … does not exist` at every use site. A *conflicting type* is
+  caught properly. Both verified.
+- **Module augmentation is program-global**, so `solution.ts`'s augmentation applies to
+  `starter.ts` too and the type half of 5.5 part 1 is not graded per-file. Stated in the
+  exercise README rather than papered over — the leakage is the lesson.
+- **Two exercises needed a non-standard parity check**, and both say so in their briefs:
+  - **5.1** grades the module's *surface*, which is the deliverable, so `starter.ts` legitimately
+    starts with no exports. A compile-time parity assertion would be red on a fresh clone, so
+    the shape is checked at run time by the first test and `subject` is cast.
+  - **5.5** uses one-directional parity only. `describeMeta` takes a `PluginMeta` that the
+    starter has not merged yet, so requiring the reverse direction would require the exercise
+    to be finished before it compiled.
+- **5.6 grades the consuming half only, and this is a deviation from the row above.** A
+  declaration file must sit beside the `.js` it describes and be named after it, so there can
+  be exactly **one** — `starter.ts` and `solution.ts` cannot each own a version to be graded
+  against, and shipping an incomplete one breaks the fresh-clone invariant, since a missing
+  declaration is `TS7016` under `strict` rather than a silent `any`. The authoring is taught by
+  the lesson page and by `text-utils.d.ts`, which is written as a worked example with its four
+  judgement calls argued in the comments.
 
 ## Course 6 — Tooling and Config
 
+**Complete.** Course published (`draft: false`). **This completes the track.**
+
 | # | Slug | L | E | Docs source | ELI5 angle | Exercise |
 |---|---|---|---|---|---|---|
-| 1 | `the-compiler-and-cli` | [ ] | — | `typescript-tooling-in-5-minutes`, `compiler-options` | Meet `tsc`: what it reads, what it writes, and the handful of flags you actually type. | **No exercise** — a CLI tour |
-| 2 | `tsconfig-tour` | [ ] | — | `tsconfig-json`, `/tsconfig/` | The settings menu. Twelve switches matter; the rest is trivia. | **No exercise** — annotated `tsconfig.json` walkthrough in prose |
-| 3 | `strictness-flags` | [ ] | [ ] | `/tsconfig/#strict`, `#noUncheckedIndexedAccess`, `#exactOptionalPropertyTypes`, `#noImplicitOverride` | `strict: true` is one switch that flips eight. Here is what each one buys you. | Fix a deliberately sloppy module so it survives `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` |
-| 4 | `erasable-syntax-and-enums` | [ ] | [ ] | `enums`, `/tsconfig/#erasableSyntaxOnly` | Some TypeScript is a sticker you peel off. Some is a part welded on. Node can only peel. | Replace an `enum` with an `as const` object plus `keyof typeof`, and prove the union is exhaustive |
-| 5 | `project-references` | [ ] | — | `project-references`, `/tsconfig/#isolatedModules` | Splitting one enormous typecheck into several that only rerun when they must. | **No exercise** — needs multiple tsconfigs, the wrong shape for one directory |
-| 6 | `watch-and-incremental` | [ ] | — | `configuring-watch`, `/tsconfig/#incremental` | How `tsc` remembers what it already checked. | **No exercise** — config-shaped |
-| 7 | `build-tools-and-transpilers` | [ ] | — | `integrating-with-build-tools`, `babel-with-typescript`, `modules/guides/choosing-compiler-options`, `nightly-builds` | Who strips your types in production, and why they do not check them on the way past. | **No exercise** — config-shaped |
+| 1 | `the-compiler-and-cli` | [x] | — | `typescript-tooling-in-5-minutes`, `compiler-options` | A spellchecker reads your letter and circles the mistakes. A typewriter produces the letter. TypeScript ships both in one program. | **No exercise** — a CLI tour |
+| 2 | `tsconfig-tour` | [x] | — | `tsconfig-json`, `/tsconfig/` | A washing machine has thirty programmes. You use three. Nobody tells you which three. | **No exercise** — annotated `tsconfig.json` walkthrough |
+| 3 | `strictness-flags` | [x] | [x] | `/tsconfig/#strict`, `#noUncheckedIndexedAccess`, `#exactOptionalPropertyTypes`, `#noImplicitOverride` | A car with no warning lights is not reliable. It has stopped telling you things. | **Every flag is a question you have to answer** — `firstLine`, `cellAt`, `sumOf`, `parseJson` over an `unknown` catch, an exhaustive `labelFor`, `isLevel`/`parseLines` |
+| 4 | `erasable-syntax-and-enums` | [x] | [x] | `enums`, `/tsconfig/#erasableSyntaxOnly` | A sticker comes off a laptop and the laptop still works. A welded bracket does not. | **Peel it off, or weld it on** — replace an `enum` with `as const` + `keyof typeof`, derive both unions, and prove exhaustiveness twice (switch and `Record`) |
+| 5 | `project-references` | [x] | — | `project-references`, `/tsconfig/#isolatedModules` | A restaurant does not re-prep the kitchen because one order changed. | **No exercise** — needs multiple tsconfigs, the wrong shape for one directory |
+| 6 | `watch-and-incremental` | [x] | — | `configuring-watch`, `/tsconfig/#incremental` | Someone who has read the whole manuscript can tell you what one changed paragraph broke. | **No exercise** — config-shaped |
+| 7 | `build-tools-and-transpilers` | [x] | — | `integrating-with-build-tools`, `babel-with-typescript`, `modules/guides/choosing-compiler-options`, `nightly-builds` | Two people work on the letter. One reads it for mistakes, one retypes and posts it. They never speak. | **No exercise** — config-shaped |
 
-Lesson 4 is the best exercise in the track, and it exists *because* of the constraint
-the exercises are authored under. See `src/exercises/README.md`.
+Lesson 4 is the best exercise in the track, and it exists *because* of the constraint the
+exercises are authored under. See `src/exercises/README.md`.
+
+### Decisions made while writing course 6
+
+- **`exactOptionalPropertyTypes` stays off, and the reason became the lesson.** The row above
+  promised 6.3 would exercise it. Turning it on produces exactly **three** errors across all 37
+  exercises — and all three are in tests that *deliberately* pass `{ name: undefined }` to an
+  optional property, because that distinction is what lessons 1.8 and 3.8 teach. The flag would
+  break content whose purpose is explaining what the flag changes. So 6.3 exercises the five
+  flags that **are** on (`strictNullChecks`, `noUncheckedIndexedAccess`,
+  `useUnknownInCatchVariables`, `noFallthroughCasesInSwitch`, `noImplicitAny`) and the lesson
+  teaches `exactOptionalPropertyTypes` in prose, using that three-error measurement as the
+  illustration: a strictness flag's cost is counted in real files, not in principle.
+- **6.3 is inverted relative to its row.** "Fix a deliberately sloppy module" is impossible
+  here for the same reason lesson 1.1's original brief was: a fresh clone has to typecheck, so
+  the package cannot contain sloppy code. The exercise instead puts the learner at each point
+  where a flag *stops them writing the obvious thing*, which teaches the same content and is
+  gradeable. Same fix as course 1 lesson 1, arriving for the same reason.
+- **6.4 uses Pattern A for its two type-level TODOs**, with the unions written out longhand as
+  the legal placeholder and an `Expect<Equals<…>>` under each. The honest limitation applies —
+  it grades correctness, not effort — so three tests were tightened to also call a function the
+  placeholders cannot fake.
+- **`as const` is not `Object.freeze`, and finding that out cost a debugging round.** 6.4's test
+  writes to `STATUS.Queued` behind a `@ts-expect-error` to show the compiler refusing it. The
+  write **lands** — `readonly` is erased — and it corrupted `STATUS` for every later test in the
+  file, failing six of them. The test now restores the value in a `finally` and asserts
+  `Object.isFrozen(STATUS) === false`, which turns the accident into the point.
+- **The `assert.deepEqual` narrowing trap recurred** in 6.3, on the `parseJson` result: a
+  `Expect<Equals<typeof result.value, unknown>>` placed after the `deepEqual` was checking the
+  narrowed literal type. Type assertions before runtime ones, as established in course 3.
 
 ---
 

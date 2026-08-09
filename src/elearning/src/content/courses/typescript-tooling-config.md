@@ -6,7 +6,7 @@ tags: ['typescript', 'tsconfig', 'tooling']
 icon: cfg
 accent: oklch(60% 0.13 30)
 order: 6
-draft: true
+draft: false
 ---
 
 `tsconfig.json` has well over a hundred options. About twelve of them change how you
