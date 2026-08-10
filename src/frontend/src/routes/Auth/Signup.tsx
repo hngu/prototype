@@ -1,21 +1,25 @@
 import { useForm } from '@mantine/form';
-import { PasswordInput, Group, Button, Box, TextInput, Text, Anchor } from '@mantine/core';
-import { SIGNUP_ROUTE } from '..';
+import { PasswordInput, Group, Button, Box, TextInput } from '@mantine/core';
 import { validateEmail, validatePassword } from '../../validations/auth';
 
-export const Login = () => {
+
+export const Signup = () => {
   const form = useForm({
     mode: 'uncontrolled',
     initialValues: {
       email: '',
       password: '',
+      confirmPassword: '',
     },
 
     validate: {
       email: validateEmail,
       password: validatePassword,
+      confirmPassword: (value, values) =>
+        value !== values.password ? 'Passwords did not match' : null,
     },
   });
+
   return (
     <Box maw={340} mx="auto">
       <form onSubmit={form.onSubmit((values) => console.log(values))}>
@@ -30,14 +34,17 @@ export const Login = () => {
           {...form.getInputProps('password')}
         />
 
+        <PasswordInput
+          mt="sm"
+          label="Confirm password"
+          placeholder="Confirm password"
+          key={form.key('confirmPassword')}
+          {...form.getInputProps('confirmPassword')}
+        />
+
         <Group justify="flex-end" mt="md">
           <Button type="submit">Submit</Button>
         </Group>
-
-        <Text size="sm" mt="md" ta="center">
-          Don&apos;t have an account? Create one{' '}
-          <Anchor href={SIGNUP_ROUTE}>here</Anchor>.
-        </Text>
       </form>
     </Box>
   );
