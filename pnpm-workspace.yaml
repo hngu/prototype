@@ -1,6 +1,7 @@
 packages:
   - 'src/frontend'
   - 'src/elearning'
+  - 'src/backend'
   # Runnable solutions + unit tests for every coding exercise in the elearning
   # courses. Its own package so exercise code is typechecked under the strict,
   # Node-executable settings a learner will actually run it with, rather than
