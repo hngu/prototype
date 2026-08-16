@@ -33,5 +33,7 @@ router
       .prefix('account')
       .as('profile')
       .use(middleware.auth())
+
+    router.post('short-urls', [controllers.ShortUrls, 'store']).use(middleware.auth())
   })
   .prefix('/api/v1')

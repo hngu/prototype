@@ -18,4 +18,7 @@ export interface ApiDefinition {
       destroy: typeof routes['profile.access_tokens.destroy']
     }
   }
+  shortUrls: {
+    store: typeof routes['short_urls.store']
+  }
 }

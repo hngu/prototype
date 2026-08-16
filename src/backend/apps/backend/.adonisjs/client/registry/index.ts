@@ -30,6 +30,12 @@ const routes = {
     tokens: [{"old":"/api/v1/account/logout","type":0,"val":"api","end":""},{"old":"/api/v1/account/logout","type":0,"val":"v1","end":""},{"old":"/api/v1/account/logout","type":0,"val":"account","end":""},{"old":"/api/v1/account/logout","type":0,"val":"logout","end":""}],
     types: placeholder as Registry['profile.access_tokens.destroy']['types'],
   },
+  'short_urls.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/short-urls',
+    tokens: [{"old":"/api/v1/short-urls","type":0,"val":"api","end":""},{"old":"/api/v1/short-urls","type":0,"val":"v1","end":""},{"old":"/api/v1/short-urls","type":0,"val":"short-urls","end":""}],
+    types: placeholder as Registry['short_urls.store']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

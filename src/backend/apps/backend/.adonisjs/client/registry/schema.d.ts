@@ -55,4 +55,16 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/access_tokens_controller').default['destroy']>>>
     }
   }
+  'short_urls.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/short-urls'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/short_url').createShortUrlValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/short_url').createShortUrlValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/short_urls_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/short_urls_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
 }

@@ -1,5 +1,10 @@
 import { apiFetch } from "./client";
-import type { AuthPayload, LoginPayload, SignupPayload, User } from "./types";
+import type {
+  AuthPayload,
+  LoginPayload,
+  SignupPayload,
+  User,
+} from "./types/auth";
 
 interface DataEnvelope<T> {
   data: T;

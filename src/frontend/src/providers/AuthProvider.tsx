@@ -10,7 +10,8 @@ import {
   signup as signupRequest,
 } from "../api/auth";
 import { ACCESS_TOKEN_COOKIE } from "../api/client";
-import { ApiError, isUser, type User } from "../api/types";
+import { ApiError } from "../api/types";
+import { isUser, type User } from "../api/types/auth";
 import { AppHeader } from "../components/AppHeader";
 
 const USER_COOKIE = "user";
