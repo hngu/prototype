@@ -1,39 +1,144 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, Outlet } from "react-router";
-import { AuthContext } from "../hooks/useAuth";
+import { AuthContext, type SignupInput } from "../hooks/useAuth";
 import { useCookie } from "../hooks/useCookie";
 import { LOGIN_ROUTE } from "../routes";
+import {
+  getProfile,
+  login as loginRequest,
+  logout as logoutRequest,
+  signup as signupRequest,
+} from "../api/auth";
+import { ACCESS_TOKEN_COOKIE } from "../api/client";
+import { ApiError, isUser, type User } from "../api/types";
+import { AppHeader } from "../components/AppHeader";
+
+const USER_COOKIE = "user";
 
 export const AuthProvider = () => {
-  const [user, setUser] = useCookie<string | null>({
-    key: "user",
+  const [storedUser, setUser, removeUser] = useCookie<User | null>({
+    key: USER_COOKIE,
     defaultValue: null,
+    getInitialValueInEffect: false,
+  });
+  const [token, setToken, removeToken] = useCookie<string | null>({
+    key: ACCESS_TOKEN_COOKIE,
+    defaultValue: null,
+    getInitialValueInEffect: false,
   });
 
+  const user = isUser(storedUser) && token ? storedUser : null;
+  const [isInitializing, setIsInitializing] = useState(() => Boolean(token));
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
+  const clearSession = useCallback(() => {
+    removeToken();
+    removeUser();
+  }, [removeToken, removeUser]);
 
-  const value = useMemo(() => {
-    // call this function when you want to authenticate the user
-    const login = async (data: string) => {
-      setUser(data);
-      navigate("/");
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      if (!token) {
+        removeUser();
+        setIsInitializing(false);
+        return;
+      }
+
+      try {
+        const profile = await getProfile();
+        if (!cancelled) {
+          setUser(profile);
+        }
+      } catch (error) {
+        if (!cancelled && error instanceof ApiError && error.status === 401) {
+          clearSession();
+        }
+      } finally {
+        if (!cancelled) {
+          setIsInitializing(false);
+        }
+      }
+    }
+
+    void restoreSession();
+
+    return () => {
+      cancelled = true;
     };
+  }, [token, setUser, removeUser, clearSession]);
 
+  const persistSession = useCallback(
+    (nextUser: User, nextToken: string) => {
+      setToken(nextToken);
+      setUser(nextUser);
+    },
+    [setToken, setUser],
+  );
 
-    // call this function to sign out logged in user
-    const logout = () => {
-      setUser(null);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setIsSubmitting(true);
+      try {
+        const result = await loginRequest({ email, password });
+        persistSession(result.user, result.token);
+        navigate("/");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [navigate, persistSession],
+  );
+
+  const signup = useCallback(
+    async (input: SignupInput) => {
+      setIsSubmitting(true);
+      try {
+        const result = await signupRequest({
+          fullName: input.fullName?.trim() ? input.fullName.trim() : null,
+          email: input.email,
+          password: input.password,
+          passwordConfirmation: input.passwordConfirmation,
+        });
+        persistSession(result.user, result.token);
+        navigate("/");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [navigate, persistSession],
+  );
+
+  const logout = useCallback(async () => {
+    setIsSubmitting(true);
+    try {
+      await logoutRequest();
+    } catch {
+      // Always clear the local session even if the API call fails.
+    } finally {
+      clearSession();
+      setIsSubmitting(false);
       navigate(LOGIN_ROUTE, { replace: true });
-    };
+    }
+  }, [clearSession, navigate]);
 
-
-    return { user, login, logout };
-  }, [user, navigate, setUser]);
-
+  const value = useMemo(
+    () => ({
+      user,
+      isInitializing,
+      isSubmitting,
+      login,
+      signup,
+      logout,
+    }),
+    [user, isInitializing, isSubmitting, login, signup, logout],
+  );
 
   return (
     <AuthContext.Provider value={value}>
+      <AppHeader />
       <Outlet />
     </AuthContext.Provider>
   );

@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { RouterProvider as ReactRouterProvider } from "react-router/dom";
 import { Home } from "./Home";
 import { Login } from "./Auth/Login";
+import { GuestRoute } from "./GuestRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { ShortURL } from "./ShortURL";
 import { AuthProvider } from "../providers/AuthProvider";
@@ -19,12 +20,17 @@ const router = createBrowserRouter([
         Component: Home,
       },
       {
-        path: LOGIN_ROUTE,
-        Component: Login,
-      },
-      {
-        path: SIGNUP_ROUTE,
-        Component: Signup,
+        Component: GuestRoute,
+        children: [
+          {
+            path: LOGIN_ROUTE,
+            Component: Login,
+          },
+          {
+            path: SIGNUP_ROUTE,
+            Component: Signup,
+          },
+        ],
       },
       {
         path: "/app/shorturl",

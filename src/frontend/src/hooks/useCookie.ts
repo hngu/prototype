@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type SameSite = "strict" | "lax" | "none";
 
@@ -175,15 +175,6 @@ export function useCookie<T = string>({
   secure,
   sameSite,
 }: UseCookieOptions<T>): UseCookieReturnValue<T | undefined> {
-  const cookieAttributes: CookieAttributes = {
-    expires,
-    maxAge,
-    path,
-    domain,
-    secure,
-    sameSite,
-  };
-
   const readValue = (skipCookie: boolean): T | undefined => {
     if (skipCookie || !isBrowser()) {
       return defaultValue;
@@ -203,41 +194,50 @@ export function useCookie<T = string>({
     }
   }, [key]);
 
-  const setCookieValue = (
-    next: T | undefined | ((prev: T | undefined) => T | undefined),
-    attributes?: CookieAttributes,
-  ) => {
-    setValue((current) => {
-      const resolved =
-        typeof next === "function"
-          ? (next as (prev: T | undefined) => T | undefined)(current)
-          : next;
+  const setCookieValue = useCallback(
+    (
+      next: T | undefined | ((prev: T | undefined) => T | undefined),
+      attributes?: CookieAttributes,
+    ) => {
+      setValue((current) => {
+        const resolved =
+          typeof next === "function"
+            ? (next as (prev: T | undefined) => T | undefined)(current)
+            : next;
 
-      if (resolved === undefined) {
-        deleteCookie(key, {
-          path: attributes?.path ?? path,
-          domain: attributes?.domain ?? domain,
+        if (resolved === undefined) {
+          deleteCookie(key, {
+            path: attributes?.path ?? path,
+            domain: attributes?.domain ?? domain,
+          });
+          return defaultValue;
+        }
+
+        setCookie(key, serialize(resolved), {
+          expires,
+          maxAge,
+          path,
+          domain,
+          secure,
+          sameSite,
+          ...attributes,
         });
-        return defaultValue;
-      }
-
-      setCookie(key, serialize(resolved), {
-        ...cookieAttributes,
-        ...attributes,
+        return resolved;
       });
-      return resolved;
-    });
-  };
+    },
+    [key, defaultValue, serialize, expires, maxAge, path, domain, secure, sameSite],
+  );
 
-  const removeCookieValue = (
-    attributes?: Pick<CookieAttributes, "path" | "domain">,
-  ) => {
-    deleteCookie(key, {
-      path: attributes?.path ?? path,
-      domain: attributes?.domain ?? domain,
-    });
-    setValue(defaultValue);
-  };
+  const removeCookieValue = useCallback(
+    (attributes?: Pick<CookieAttributes, "path" | "domain">) => {
+      deleteCookie(key, {
+        path: attributes?.path ?? path,
+        domain: attributes?.domain ?? domain,
+      });
+      setValue(defaultValue);
+    },
+    [key, defaultValue, path, domain],
+  );
 
   return [value, setCookieValue, removeCookieValue];
 }

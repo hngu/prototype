@@ -13,6 +13,7 @@ import "@mantine/spotlight/styles.css";
 import "@mantine/nprogress/styles.css";
 
 import { MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import { RouterProvider } from "./routes";
 
 // import reactLogo from './assets/react.svg'
@@ -24,6 +25,7 @@ function App() {
   return (
     <StrictMode>
       <MantineProvider>
+        <Notifications />
         <RouterProvider />
       </MantineProvider>
     </StrictMode>
