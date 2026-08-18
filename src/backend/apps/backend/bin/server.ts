@@ -34,6 +34,13 @@ new Ignitor(APP_ROOT, { importer: IMPORTER })
     app.booting(async () => {
       await import('#start/env')
     })
+    app.starting(async () => {
+      const { default: redis } = await import('@adonisjs/redis/services/main')
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Redis cluster did not become ready')), 5000)
+      )
+      await Promise.race([redis.ping(), timeout])
+    })
     app.listen('SIGTERM', () => app.terminate())
     app.listenIf(app.managedByPm2, 'SIGINT', () => app.terminate())
   })

@@ -27,6 +27,8 @@ redis-cli -c -h 127.0.0.1 -p 7001 CLUSTER NODES
 
 Connecting to any master (`7001`–`7003`) is enough; replicas are discovered automatically. `FLUSHALL` only on masters — replicas reject writes.
 
+The Adonis backend seeds the cluster with `REDIS_NODES=127.0.0.1:7001,127.0.0.1:7002,127.0.0.1:7003`.
+
 Wipe cluster and database data:
 
 ```sh

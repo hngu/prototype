@@ -24,4 +24,7 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   // Session
   SESSION_DRIVER: Env.schema.enum(['cookie', 'memory', 'database'] as const),
+
+  // Redis Cluster (comma-separated host:port seeds; replicas are discovered)
+  REDIS_NODES: Env.schema.string(),
 })
