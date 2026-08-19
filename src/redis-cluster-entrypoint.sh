@@ -33,7 +33,17 @@ for port in $PORTS; do
   done
 done
 
-if redis-cli -p 7001 cluster info 2>/dev/null | grep -q "cluster_state:ok"; then
+wait_for_cluster_ok() {
+  until redis-cli -p 7001 cluster info 2>/dev/null | grep -q "cluster_state:ok"; do
+    sleep 0.2
+  done
+}
+
+# Persisted node configs mean the cluster already exists. Creating it again
+# fails with "Node is not empty" and takes the container down (set -e).
+if [ -f /data/nodes-7001.conf ]; then
+  echo "cluster config found, waiting for cluster_state:ok"
+  wait_for_cluster_ok
   echo "cluster already initialized"
 else
   redis-cli --cluster create \
