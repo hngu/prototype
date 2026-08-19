@@ -37,3 +37,6 @@ router
     router.post('short-urls', [controllers.ShortUrls, 'store']).use(middleware.auth())
   })
   .prefix('/api/v1')
+
+// URL shortening redirect
+router.get('/s/:shortCode', [controllers.ShortUrls, 'show'])

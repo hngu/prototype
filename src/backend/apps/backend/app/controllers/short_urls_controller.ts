@@ -11,4 +11,14 @@ export default class ShortUrlsController {
       shortUrl: record.shortUrl,
     })
   }
+
+  async show({ request, response }: HttpContext) {
+    const shortCode = request.param('shortCode')
+    const longUrl = await urlShortenerService.getLongUrl(shortCode)
+
+    if (!longUrl) {
+      return response.notFound()
+    }
+    return response.redirect().status(302).toPath(longUrl)
+  }
 }

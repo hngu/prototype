@@ -10,7 +10,7 @@ export default class ShortUrl extends ShortUrlSchema {
 
   get shortUrl() {
     const baseUrl = appUrl.replace(/\/$/, '')
-    return `${baseUrl}/${this.shortCode}`
+    return `${baseUrl}/s/${this.shortCode}`
   }
 
   static findByShortCode(shortCode: string) {

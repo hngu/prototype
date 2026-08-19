@@ -44,22 +44,25 @@ export class UrlShortenerService {
     return this.convertCounterToShortCode(await this.getNextCounter())
   }
 
-  async create(user: User, input: { alias?: string | null; url: string }) {
-    const shortCode = input.alias || (await this.nextShortCode())
-
-    if (input.alias && (await ShortUrl.findByShortCode(input.alias))) {
-      throw new E_ALIAS_TAKEN()
+  async create(user: User, { alias, url }: { alias?: string | null; url: string }) {
+    if (alias) {
+      const isAliasTaken = await ShortUrl.findByShortCode(alias)
+      if (isAliasTaken) {
+        throw new E_ALIAS_TAKEN()
+      }
     }
+
+    const shortCode = alias?.trim() || (await this.nextShortCode())
 
     try {
       const record = await user.related('shortUrls').create({
         shortCode,
-        longUrl: input.url,
+        longUrl: url,
       })
       await this.cache(record.shortCode, record.longUrl)
       return record
     } catch (error) {
-      if (input.alias && isUniqueViolation(error)) {
+      if (alias && isUniqueViolation(error)) {
         throw new E_ALIAS_TAKEN()
       }
       throw error
