@@ -67,4 +67,16 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/short_urls_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'short_urls.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/s/:shortCode'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { shortCode: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/short_urls_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/short_urls_controller').default['show']>>>
+    }
+  }
 }

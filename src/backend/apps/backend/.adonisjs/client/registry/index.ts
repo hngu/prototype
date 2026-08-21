@@ -36,6 +36,12 @@ const routes = {
     tokens: [{"old":"/api/v1/short-urls","type":0,"val":"api","end":""},{"old":"/api/v1/short-urls","type":0,"val":"v1","end":""},{"old":"/api/v1/short-urls","type":0,"val":"short-urls","end":""}],
     types: placeholder as Registry['short_urls.store']['types'],
   },
+  'short_urls.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/s/:shortCode',
+    tokens: [{"old":"/s/:shortCode","type":0,"val":"s","end":""},{"old":"/s/:shortCode","type":1,"val":"shortCode","end":""}],
+    types: placeholder as Registry['short_urls.show']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

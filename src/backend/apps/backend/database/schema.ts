@@ -38,7 +38,7 @@ export class ShortUrlSchema extends BaseModel {
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
-  declare id: number
+  declare id: bigint | number
   @column()
   declare longUrl: string
   @column()

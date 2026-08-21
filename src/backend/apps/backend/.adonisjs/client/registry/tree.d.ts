@@ -20,5 +20,6 @@ export interface ApiDefinition {
   }
   shortUrls: {
     store: typeof routes['short_urls.store']
+    show: typeof routes['short_urls.show']
   }
 }
