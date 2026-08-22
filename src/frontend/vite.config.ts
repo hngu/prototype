@@ -8,4 +8,13 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    host: true,
+    allowedHosts: ['prototype.app'],
+    hmr: {
+      host: 'prototype.app',
+      protocol: 'wss',
+      clientPort: 443,
+    },
+  },
 })

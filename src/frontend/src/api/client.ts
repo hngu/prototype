@@ -4,7 +4,7 @@ import { ApiError } from "./types";
 export const ACCESS_TOKEN_COOKIE = "accessToken";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:3333";
+  import.meta.env.VITE_API_URL ?? "https://adonis.app";
 
 function getAccessToken(): string | null {
   return readCookieValue<string | null>({
