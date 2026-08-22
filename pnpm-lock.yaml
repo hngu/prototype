@@ -6,6 +6,8 @@ settings:
 
 importers:
 
+  .: {}
+
   src/backend:
     dependencies:
       '@adonisjs/auth':

@@ -39,7 +39,6 @@ export class UrlShortenerService {
     this.shuttingDown = true
     const leftover = this.slots.splice(0)
     if (leftover.length === 0) {
-      logger.info('No unused short-code slots to persist')
       return
     }
 

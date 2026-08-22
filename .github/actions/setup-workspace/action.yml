@@ -1,7 +1,7 @@
 name: Set up workspace
 description: >
-  Installs the Node and pnpm versions named in .tool-versions, then installs the
-  workspace with a frozen lockfile.
+  Installs the Node version from .nvmrc and the pnpm version from the root
+  packageManager field, then installs the workspace with a frozen lockfile.
 
 # Every `uses:` below is pinned to a full commit SHA, with the tag in a trailing
 # comment. This repository quarantines npm dependencies for seven days
@@ -18,29 +18,18 @@ description: >
 runs:
   using: composite
   steps:
-    # Read the toolchain out of .tool-versions rather than hardcoding it here.
-    # This repo has no root package.json, so pnpm/action-setup cannot infer the
-    # version from a `packageManager` field, and a literal in this file would be a
-    # second place for the toolchain version to live and drift.
-    - id: tools
-      shell: bash
-      run: |
-        set -euo pipefail
-        node_version="$(awk '$1 == "nodejs" { print $2 }' .tool-versions)"
-        pnpm_version="$(awk '$1 == "pnpm" { print $2 }' .tool-versions)"
-        test -n "$node_version" || { echo "::error::no 'nodejs' line in .tool-versions"; exit 1; }
-        test -n "$pnpm_version" || { echo "::error::no 'pnpm' line in .tool-versions"; exit 1; }
-        echo "node=$node_version" >> "$GITHUB_OUTPUT"
-        echo "pnpm=$pnpm_version" >> "$GITHUB_OUTPUT"
-        echo "Node $node_version, pnpm $pnpm_version"
-
+    # Do not restore .tool-versions. Cloudflare Pages (and Workers builds)
+    # treat that file as an asdf manifest and try to install every tool listed
+    # — including pnpm, whose asdf plugin is not on the Pages image — so the
+    # deploy fails before the build command runs. Pin Node in .nvmrc (Pages,
+    # Netlify, Vercel, and actions/setup-node all read it) and pnpm in
+    # package.json#packageManager (pnpm/action-setup and Corepack read it).
+    # Neither file trips the asdf installer.
     - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-      with:
-        version: ${{ steps.tools.outputs.pnpm }}
 
     - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
-        node-version: ${{ steps.tools.outputs.node }}
+        node-version-file: .nvmrc
         cache: pnpm
 
     # --frozen-lockfile fails if pnpm-lock.yaml does not match the manifests,

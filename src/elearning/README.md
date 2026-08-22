@@ -270,10 +270,12 @@ zero, on an incomplete exercise directory, and on a lesson whose exercise is mis
 first, renaming a directory would produce a passing run that graded nothing, and the "verified" pill
 on every lesson page would be certifying an empty set.
 
-[`.github/actions/setup-workspace`](../../.github/actions/setup-workspace/action.yml) reads Node and
-pnpm out of `.tool-versions` with `awk` rather than hardcoding them — this repo has no root
-`package.json`, so `pnpm/action-setup` cannot infer a version from a `packageManager` field, and a
-literal in the workflow would be a second place for the toolchain version to drift.
+[`.github/actions/setup-workspace`](../../.github/actions/setup-workspace/action.yml) reads Node
+from `.nvmrc` (`actions/setup-node`'s `node-version-file`) and pnpm from the root
+`package.json` `packageManager` field (`pnpm/action-setup` and Corepack). **Do not add a
+`.tool-versions` file** — Cloudflare Pages treats it as an asdf manifest and tries to install every
+tool listed, including pnpm, whose asdf plugin is not on the Pages image, so the deploy fails before
+the build command runs.
 
 **Every `uses:` is pinned to a full commit SHA**, tag in a trailing comment. Tags are mutable; a
 floating `@v7` would be the same supply-chain hole this repo's `minimumReleaseAge` policy exists to
@@ -313,8 +315,9 @@ the recommended target** — see the note on advertising below.
 | Vercel | Root Directory `src/elearning` | auto |
 | GitHub Pages | `withastro/action` with `path: ./src/elearning` | auto |
 
-Set `NODE_VERSION=24.9.0` (Cloudflare/Netlify) — neither reads `.tool-versions`. Vercel needs an
-`engines.node` field or `.nvmrc`, and "Include files outside the Root Directory" enabled so the
+Node is pinned in `.nvmrc` (`24.9.0`), which Cloudflare Pages, Netlify, and Vercel all read. On
+Cloudflare Pages also set `PNPM_VERSION=11.20.0` if you want the same pnpm as CI — Pages does not
+read `packageManager`. Vercel needs "Include files outside the Root Directory" enabled so the
 pnpm workspace and lockfile resolve.
 
 **GitHub Pages needs a config change** if served from a subpath: set `base: '/repo'` in
