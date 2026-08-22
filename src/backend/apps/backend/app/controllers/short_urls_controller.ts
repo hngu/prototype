@@ -19,6 +19,9 @@ export default class ShortUrlsController {
     if (!longUrl) {
       return response.notFound()
     }
+
+    // s-maxage is for nginx (shared cache); max-age=0 keeps the browser from caching the 302.
+    response.header('Cache-Control', 'public, s-maxage=600, max-age=0')
     return response.redirect().status(302).toPath(longUrl)
   }
 }

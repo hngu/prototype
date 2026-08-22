@@ -8,7 +8,7 @@ docker compose up -d
 
 | Service | Role | URL / port |
 | --- | --- | --- |
-| Nginx | Reverse proxy | https://adonis.app (Adonis), https://prototype.app (Vite) |
+| Nginx | Reverse proxy + CDN | https://adonis.app (Adonis), https://prototype.app (Vite) |
 | Postgres | Database | `localhost:5432` |
 | Redis Insight | Cluster UI | http://localhost:5540 |
 | Redis Cluster | Master | `localhost:7001` |
@@ -27,7 +27,18 @@ Nginx listens on host ports 80 and 443. HTTP redirects to HTTPS (the `.app` TLD 
 | Domain | Proxies to |
 | --- | --- |
 | https://adonis.app | Adonis on `localhost:3333` |
+| https://adonis.app/s/… | Adonis, with nginx `proxy_cache` (CDN for short-URL 302s) |
 | https://prototype.app | Vite on `localhost:5173` |
+
+`/api/` and the rest of `adonis.app` stay a plain reverse proxy (never cached). Only `GET /s/:shortCode` is a CDN location: cache hits never reach Adonis; misses and expired entries do. Redis remains the origin cache for the mapping; nginx caches the HTTP 302.
+
+Cache files live in the `nginx_cdn_cache` volume (`/var/cache/nginx/cdn`). After creating a short URL, the second request should be a HIT:
+
+```sh
+curl -sI https://adonis.app/s/YOURCODE | grep -i x-cache
+# first:  MISS (Adonis ran)
+# second: HIT  (nginx only)
+```
 
 `.app` is a real TLD, so the host machine must resolve those names to loopback. A container cannot write macOS `/etc/hosts` (Docker Desktop is not root on the Mac). From this directory:
 
