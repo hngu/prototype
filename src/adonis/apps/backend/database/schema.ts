@@ -32,6 +32,44 @@ export class AuthAccessTokenSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class EventSchema extends BaseModel {
+  static $columns = ['artists', 'category', 'createdAt', 'date', 'description', 'id', 'name', 'updatedAt', 'venueId'] as const
+  $columns = EventSchema.$columns
+  @column()
+  declare artists: any
+  @column()
+  declare category: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare date: DateTime
+  @column()
+  declare description: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare name: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare venueId: number
+}
+
+export class SeatSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'seatName', 'updatedAt', 'venueId'] as const
+  $columns = SeatSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare seatName: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare venueId: number
+}
+
 export class ShortUrlSchema extends BaseModel {
   static $columns = ['createdAt', 'id', 'longUrl', 'shortCode', 'updatedAt', 'userId'] as const
   $columns = ShortUrlSchema.$columns
@@ -49,6 +87,21 @@ export class ShortUrlSchema extends BaseModel {
   declare userId: number
 }
 
+export class SpatialRefSySchema extends BaseModel {
+  static $columns = ['authName', 'authSrid', 'proj4Text', 'srid', 'srtext'] as const
+  $columns = SpatialRefSySchema.$columns
+  @column()
+  declare authName: string | null
+  @column()
+  declare authSrid: number | null
+  @column()
+  declare proj4Text: string | null
+  @column({ isPrimary: true })
+  declare srid: number
+  @column()
+  declare srtext: string | null
+}
+
 export class UserSchema extends BaseModel {
   static $columns = ['createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
   $columns = UserSchema.$columns
@@ -62,6 +115,23 @@ export class UserSchema extends BaseModel {
   declare id: number
   @column({ serializeAs: null })
   declare password: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class VenueSchema extends BaseModel {
+  static $columns = ['address', 'createdAt', 'id', 'location', 'name', 'updatedAt'] as const
+  $columns = VenueSchema.$columns
+  @column()
+  declare address: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare location: any
+  @column()
+  declare name: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }

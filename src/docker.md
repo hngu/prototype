@@ -9,7 +9,7 @@ docker compose up -d
 | Service | Role | URL / port |
 | --- | --- | --- |
 | Nginx | Reverse proxy + CDN | https://adonis.app (Adonis), https://prototype.app (Vite) |
-| Postgres | Database | `localhost:5432` |
+| Postgres | Database (PostGIS 16-3.5, arm64) | `localhost:5432` |
 | Redis Insight | Cluster UI | http://localhost:5540 |
 | Redis Cluster | Master | `localhost:7001` |
 | Redis Cluster | Master | `localhost:7002` |
@@ -18,7 +18,17 @@ docker compose up -d
 | Redis Cluster | Replica (read-only) | `localhost:7005` |
 | Redis Cluster | Replica (read-only) | `localhost:7006` |
 
-Postgres credentials come from `PG_USER`, `PG_PASSWORD`, and `PG_DB_NAME` (defaults `postgres` / `postgres` / `prototype`). The host port is `PG_PORT` (default `5432`).
+Postgres uses `imresamu/postgis:16-3.5-bookworm` (PostgreSQL 16 + PostGIS 3.5) so venue location search can use GIS (`CREATE EXTENSION postgis`). The official `postgis/postgis` image is amd64-only and fails on Apple Silicon. Credentials come from `PG_USER`, `PG_PASSWORD`, and `PG_DB_NAME` (defaults `postgres` / `postgres` / `prototype`). The host port is `PG_PORT` (default `5432`).
+
+If this volume was already initialized with the stock `postgres:16-alpine` image, recreate it after the image change so PostGIS can install:
+
+```sh
+docker compose down
+docker volume rm src_postgres_data
+docker compose up -d
+```
+
+`CREATE EXTENSION` cannot add PostGIS to a data directory created by a non-PostGIS image. `docker compose down -v` also wipes Redis and nginx cache volumes.
 
 ## Domain names (nginx)
 
