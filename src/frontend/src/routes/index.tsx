@@ -7,6 +7,7 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { ShortURL } from "./ShortURL";
 import { AuthProvider } from "../providers/AuthProvider";
 import { Signup } from "./Auth/Signup";
+import { BookTicket } from "./BookTicket";
 
 export const LOGIN_ROUTE = '/app/login';
 export const SIGNUP_ROUTE = '/app/signup';
@@ -41,6 +42,16 @@ const router = createBrowserRouter([
             Component: ShortURL,
           },
         ],
+      },
+      {
+        path: "app/bookticket",
+        Component: ProtectedRoute,
+        children: [
+          {
+            index: true,
+            Component: BookTicket,
+          }
+        ]
       }
     ]
   }
