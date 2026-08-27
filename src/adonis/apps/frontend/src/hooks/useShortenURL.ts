@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { shortenUrl } from "../api/shortUrl";
-import { ApiError } from "../api/types";
+import { TuyauHTTPError } from "@tuyau/core/client";
 
 export function useShortenURL() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +21,7 @@ export function useShortenURL() {
       return result;
     } catch (err) {
       const message =
-        err instanceof ApiError ? err.message : "Something went wrong";
+        err instanceof TuyauHTTPError ? err.message : "Something went wrong";
       setError(message);
       throw err;
     } finally {

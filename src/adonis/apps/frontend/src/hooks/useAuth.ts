@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { User } from "../api/types/auth";
+import type { User } from "../api/auth";
 
 export interface SignupInput {
   fullName?: string;

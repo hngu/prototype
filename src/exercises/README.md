@@ -141,7 +141,7 @@ and prefer deleting the redundant declaration when the base class already assign
 - **`@types/node` is pinned exactly**, to the version already in the workspace
   lockfile. The root `pnpm-workspace.yaml` sets `minimumReleaseAge: 10080`, and a
   range would let a re-resolve pick a different aged version — bumping
-  `src/frontend` as a side effect. It is the only dependency here besides the
+  another workspace package as a side effect. It is the only dependency here besides the
   compiler.
 - **`typescript` matches `src/elearning` byte for byte.** `tools/parity.test.ts`
   enforces that, plus agreement with the `TYPESCRIPT_VERSION` the site displays.

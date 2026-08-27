@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, Outlet } from "react-router";
-import { AuthContext, type SignupInput } from "../hooks/useAuth";
-import { useCookie } from "../hooks/useCookie";
-import { LOGIN_ROUTE } from "../routes";
+import { TuyauHTTPError } from "@tuyau/core/client";
 import {
   getProfile,
+  isUser,
   login as loginRequest,
   logout as logoutRequest,
   signup as signupRequest,
+  type User,
 } from "../api/auth";
 import { ACCESS_TOKEN_COOKIE } from "../api/client";
-import { ApiError } from "../api/types";
-import { isUser, type User } from "../api/types/auth";
 import { AppHeader } from "../components/AppHeader";
+import { AuthContext, type SignupInput } from "../hooks/useAuth";
+import { useCookie } from "../hooks/useCookie";
+import { LOGIN_ROUTE } from "../routes";
 
 const USER_COOKIE = "user";
 
@@ -54,7 +55,7 @@ export const AuthProvider = () => {
           setUser(profile);
         }
       } catch (error) {
-        if (!cancelled && error instanceof ApiError && error.status === 401) {
+        if (!cancelled && error instanceof TuyauHTTPError && error.isStatus(401)) {
           clearSession();
         }
       } finally {

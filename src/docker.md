@@ -67,9 +67,9 @@ docker compose up -d nginx
 
 Start Adonis and Vite on the host as usual. They must bind beyond loopback so the container can reach them:
 
-- Adonis: `HOST=0.0.0.0` and `APP_URL=https://adonis.app` (see `src/backend/apps/backend/.env.example`)
-- Vite: already configured in `src/frontend/vite.config.ts`
-- Frontend API calls: `VITE_API_URL=https://adonis.app` (see `src/frontend/.env.example`; this is also the client default)
+- Adonis: `HOST=0.0.0.0` and `APP_URL=https://adonis.app` (see `src/adonis/apps/backend/.env.example`)
+- Vite: already configured in `src/adonis/apps/frontend/vite.config.ts`
+- Frontend API calls: `VITE_API_URL=https://adonis.app` (see `src/adonis/apps/frontend/.env.example`; this is also the client default)
 
 Direct `localhost:3333` and `localhost:5173` still work as a fallback.
 

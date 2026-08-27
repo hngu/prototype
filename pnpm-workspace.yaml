@@ -1,5 +1,4 @@
 packages:
-  - 'src/frontend'
   - 'src/elearning'
   - 'src/backend'
   # Runnable solutions + unit tests for every coding exercise in the elearning
