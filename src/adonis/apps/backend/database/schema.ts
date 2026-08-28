@@ -33,7 +33,7 @@ export class AuthAccessTokenSchema extends BaseModel {
 }
 
 export class EventSchema extends BaseModel {
-  static $columns = ['artists', 'category', 'createdAt', 'date', 'description', 'id', 'name', 'updatedAt', 'venueId'] as const
+  static $columns = ['artists', 'category', 'createdAt', 'date', 'description', 'id', 'name', 'nameSearch', 'updatedAt', 'venueId'] as const
   $columns = EventSchema.$columns
   @column()
   declare artists: any
@@ -49,6 +49,8 @@ export class EventSchema extends BaseModel {
   declare id: number
   @column()
   declare name: string
+  @column()
+  declare nameSearch: string | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
