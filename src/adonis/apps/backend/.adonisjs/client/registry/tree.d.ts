@@ -22,4 +22,7 @@ export interface ApiDefinition {
     store: typeof routes['short_urls.store']
     show: typeof routes['short_urls.show']
   }
+  events: {
+    index: typeof routes['events.index']
+  }
 }

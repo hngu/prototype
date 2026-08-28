@@ -67,6 +67,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/short_urls_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'events.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/events'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/event').searchEventsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/events_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/events_controller').default['index']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'short_urls.show': {
     methods: ["GET","HEAD"]
     pattern: '/s/:shortCode'

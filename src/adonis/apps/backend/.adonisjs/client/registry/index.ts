@@ -36,6 +36,12 @@ const routes = {
     tokens: [{"old":"/api/v1/short-urls","type":0,"val":"api","end":""},{"old":"/api/v1/short-urls","type":0,"val":"v1","end":""},{"old":"/api/v1/short-urls","type":0,"val":"short-urls","end":""}],
     types: placeholder as Registry['short_urls.store']['types'],
   },
+  'events.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/events',
+    tokens: [{"old":"/api/v1/events","type":0,"val":"api","end":""},{"old":"/api/v1/events","type":0,"val":"v1","end":""},{"old":"/api/v1/events","type":0,"val":"events","end":""}],
+    types: placeholder as Registry['events.index']['types'],
+  },
   'short_urls.show': {
     methods: ["GET","HEAD"],
     pattern: '/s/:shortCode',

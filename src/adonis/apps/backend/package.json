@@ -6,7 +6,8 @@
   "license": "MIT",
   "exports": {
     "./data": "./.adonisjs/client/data.d.ts",
-    "./registry": "./.adonisjs/client/registry/index.ts"
+    "./registry": "./.adonisjs/client/registry/index.ts",
+    "./event-categories": "./app/constants/event_categories.ts"
   },
   "scripts": {
     "start": "node bin/server.js",
@@ -35,7 +36,8 @@
     "#database/*": "./database/*.js",
     "#tests/*": "./tests/*.js",
     "#start/*": "./start/*.js",
-    "#config/*": "./config/*.js"
+    "#config/*": "./config/*.js",
+    "#constants/*": "./app/constants/*.js"
   },
   "devDependencies": {
     "@adonisjs/assembler": "^8.4.0",

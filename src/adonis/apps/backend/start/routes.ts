@@ -35,6 +35,7 @@ router
       .use(middleware.auth())
 
     router.post('short-urls', [controllers.ShortUrls, 'store']).use(middleware.auth())
+    router.get('events', [controllers.Events, 'index']).use(middleware.auth())
   })
   .prefix('/api/v1')
 

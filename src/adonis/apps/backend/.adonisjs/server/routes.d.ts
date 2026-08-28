@@ -9,14 +9,17 @@ export type ScannedRoutes = {
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'short_urls.store': { paramsTuple?: []; params?: {} }
+    'events.index': { paramsTuple?: []; params?: {} }
     'short_urls.show': { paramsTuple: [ParamValue]; params: {'shortCode': ParamValue} }
   }
   GET: {
     'profile.profile.show': { paramsTuple?: []; params?: {} }
+    'events.index': { paramsTuple?: []; params?: {} }
     'short_urls.show': { paramsTuple: [ParamValue]; params: {'shortCode': ParamValue} }
   }
   HEAD: {
     'profile.profile.show': { paramsTuple?: []; params?: {} }
+    'events.index': { paramsTuple?: []; params?: {} }
     'short_urls.show': { paramsTuple: [ParamValue]; params: {'shortCode': ParamValue} }
   }
   POST: {

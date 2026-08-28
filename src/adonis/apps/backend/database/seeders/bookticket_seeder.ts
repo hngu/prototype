@@ -1,6 +1,7 @@
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
 import { DateTime } from 'luxon'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+import type { EventCategory } from '#constants/event_categories'
 
 const SEAT_INSERT_CHUNK_SIZE = 200
 
@@ -15,7 +16,7 @@ type VenueSeed = {
     name: string
     artists: string[]
     description: string
-    category: string
+    category: EventCategory
     date: DateTime
   }
 }
