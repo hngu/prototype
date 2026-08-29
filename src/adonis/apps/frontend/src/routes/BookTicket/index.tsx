@@ -1,36 +1,56 @@
-import { Box, Table } from "@mantine/core";
+import { useEffect } from "react";
+import { Alert, Box, Center, Loader, Table, Text } from "@mantine/core";
+import dayjs from "dayjs";
 import { BookTicketSearch } from "../../components/BookTicketSearch";
-
-const searchResults = [
-  { position: 6, mass: 12.011, symbol: 'C', name: 'Carbon' },
-  { position: 7, mass: 14.007, symbol: 'N', name: 'Nitrogen' },
-  { position: 39, mass: 88.906, symbol: 'Y', name: 'Yttrium' },
-  { position: 56, mass: 137.33, symbol: 'Ba', name: 'Barium' },
-  { position: 58, mass: 140.12, symbol: 'Ce', name: 'Cerium' },
-];
+import { useSearchEvents } from "../../hooks/useSearchEvents";
 
 export const BookTicket = () => {
+  const { events, isLoading, error, search } = useSearchEvents();
+
+  useEffect(() => {
+    void search();
+  }, [search]);
+
   return (
     <Box pt="xl" px="xl">
-      <BookTicketSearch />
-      <Table mt="md">
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th>Event name</Table.Th>
-          <Table.Th>Date</Table.Th>
-          <Table.Th>Venue</Table.Th>
-          <Table.Th></Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>{searchResults.map(result => (
-        <Table.Tr key={result.name}>
-          <Table.Td>{result.position}</Table.Td>
-          <Table.Td>{result.name}</Table.Td>
-          <Table.Td>{result.symbol}</Table.Td>
-          <Table.Td>{result.mass}</Table.Td>
-        </Table.Tr>
-      ))}</Table.Tbody>
-      </Table>
+      <BookTicketSearch onSearch={(filters) => void search(filters)} isLoading={isLoading} />
+      {error ? (
+        <Alert color="red" mt="md" title="Could not load events">
+          {error}
+        </Alert>
+      ) : null}
+      {isLoading && events.length === 0 ? (
+        <Center mt="md">
+          <Loader />
+        </Center>
+      ) : events.length === 0 && !error ? (
+        <Text mt="md" c="dimmed">
+          No events found
+        </Text>
+      ) : events.length > 0 ? (
+        <Table mt="md">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Event name</Table.Th>
+              <Table.Th>Date</Table.Th>
+              <Table.Th>Venue</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {events.map((event) => (
+              <Table.Tr key={event.id}>
+                <Table.Td>{event.name}</Table.Td>
+                <Table.Td>
+                  {event.date
+                    ? dayjs(event.date.toString()).format("MMM D, YYYY h:mm A")
+                    : "—"}
+                </Table.Td>
+                <Table.Td>{event.venue.name}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      ) : null}
     </Box>
   );
 };

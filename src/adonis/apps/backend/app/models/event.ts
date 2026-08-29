@@ -25,6 +25,9 @@ export default class Event extends EventSchema {
   declare venue: BelongsTo<typeof Venue>
 
   static search({ date, category, q }: EventSearchFilters) {
+    // preloading here but when we implement location search we need join
+    // preload will fetch the matching venue ids as a second query after this one
+    // to load with the event result models
     const query = this.query().preload('venue').orderBy('date', 'asc')
 
     if (date) {
