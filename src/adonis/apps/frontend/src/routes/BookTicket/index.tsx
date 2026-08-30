@@ -5,7 +5,7 @@ import { BookTicketSearch } from "../../components/BookTicketSearch";
 import { useSearchEvents } from "../../hooks/useSearchEvents";
 
 export const BookTicket = () => {
-  const { events, isLoading, error, search } = useSearchEvents();
+  const { events, isLoading, error, nearError, search } = useSearchEvents();
 
   useEffect(() => {
     void search();
@@ -13,7 +13,11 @@ export const BookTicket = () => {
 
   return (
     <Box pt="xl" px="xl">
-      <BookTicketSearch onSearch={(filters) => void search(filters)} isLoading={isLoading} />
+      <BookTicketSearch
+        onSearch={(filters) => void search(filters)}
+        isLoading={isLoading}
+        nearError={nearError}
+      />
       {error ? (
         <Alert color="red" mt="md" title="Could not load events">
           {error}

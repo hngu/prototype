@@ -5,7 +5,7 @@ const FIELD_MAP: Record<string, string> = {
   passwordConfirmation: "confirmPassword",
 };
 
-function vineFieldErrors(
+export function vineFieldErrors(
   payload: unknown,
 ): { field?: string; message: string }[] | null {
   if (
@@ -31,7 +31,7 @@ function vineFieldErrors(
   });
 }
 
-function firstApiMessage(payload: unknown): string | undefined {
+export function firstApiMessage(payload: unknown): string | undefined {
   return vineFieldErrors(payload)?.[0]?.message;
 }
 

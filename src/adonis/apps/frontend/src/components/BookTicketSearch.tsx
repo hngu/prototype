@@ -20,15 +20,18 @@ function isEventCategory(value: string): value is EventCategory {
 type BookTicketSearchProps = {
   onSearch: (filters: SearchEventsQuery) => void;
   isLoading: boolean;
+  nearError?: string | null;
 };
 
 export const BookTicketSearch = ({
   onSearch,
   isLoading,
+  nearError,
 }: BookTicketSearchProps) => {
   const [date, setDate] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [near, setNear] = useState("");
 
   const handleSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
@@ -43,6 +46,9 @@ export const BookTicketSearch = ({
     }
     if (query.trim()) {
       filters.q = query.trim();
+    }
+    if (near.trim()) {
+      filters.near = near.trim();
     }
 
     onSearch(filters);
@@ -67,6 +73,13 @@ export const BookTicketSearch = ({
             setCategory(typeof value === "string" ? value : null)
           }
           clearable
+        />
+        <TextInput
+          label="Location"
+          placeholder="City or address"
+          value={near}
+          error={nearError}
+          onChange={(event) => setNear(event.currentTarget.value)}
         />
         <TextInput
           label="Search"

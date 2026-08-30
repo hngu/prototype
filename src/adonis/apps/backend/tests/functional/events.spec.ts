@@ -5,9 +5,25 @@ import db from '@adonisjs/lucid/services/db'
 import Event from '#models/event'
 import User from '#models/user'
 import type { EventCategory } from '#constants/event_categories'
+import { getGeocoder, setGeocoder } from '#services/nominatim_geocoder'
+import type { Coordinates, Geocoder } from '#services/nominatim_geocoder'
+
+const NYC: Coordinates = { latitude: 40.7302, longitude: -74.0006 }
+const CHICAGO: Coordinates = { latitude: 41.8748, longitude: -87.6561 }
+const METERS_PER_DEGREE_LAT = 111_320
 
 test.group('Events search', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
+  group.each.setup(async () => {
+    await db.from('events').delete()
+    await db.from('seats').delete()
+    await db.from('venues').delete()
+  })
+  group.each.setup(() => {
+    const previous = getGeocoder()
+    setGeocoder(stubGeocoder())
+    return () => setGeocoder(previous)
+  })
 
   test('returns 401 without a token', async ({ client }) => {
     const response = await client.get('/api/v1/events')
@@ -155,6 +171,78 @@ test.group('Events search', (group) => {
     assert.notProperty(body.data[0], 'nameSearch')
     assert.notProperty(body.data[0].venue, 'location')
   })
+
+  test('keeps events whose venues are within 20 miles of a geocoded place', async ({
+    client,
+    assert,
+  }) => {
+    const token = await createAccessToken()
+    const nycVenueId = await createVenue({ name: 'NYC Venue', ...NYC })
+    const chicagoVenueId = await createVenue({ name: 'Chicago Venue', ...CHICAGO })
+    await createEvent(nycVenueId, {
+      name: 'Late Night at the Cellar',
+      category: 'comedy',
+      date: DateTime.fromISO('2076-09-04T22:00:00.000Z'),
+    })
+    await createEvent(chicagoVenueId, {
+      name: 'UIC Flames vs. DePaul Blue Demons',
+      category: 'sports',
+      date: DateTime.fromISO('2076-10-10T19:00:00.000Z'),
+    })
+
+    const nyc = await client.get('/api/v1/events').bearerToken(token).qs({ near: 'New York' })
+    nyc.assertStatus(200)
+    assert.deepEqual(eventNames(nyc.body()), ['Late Night at the Cellar'])
+
+    const chicago = await client.get('/api/v1/events').bearerToken(token).qs({ near: 'Chicago' })
+    chicago.assertStatus(200)
+    assert.deepEqual(eventNames(chicago.body()), ['UIC Flames vs. DePaul Blue Demons'])
+  })
+
+  test('rejects an unknown place with 422', async ({ client, assert }) => {
+    const token = await createAccessToken()
+
+    const response = await client.get('/api/v1/events').bearerToken(token).qs({ near: 'Atlantis' })
+
+    response.assertStatus(422)
+    const body = response.body() as unknown as {
+      errors: { field: string; message: string }[]
+    }
+    assert.equal(body.errors[0].field, 'near')
+    assert.equal(body.errors[0].message, 'Could not find that place')
+  })
+
+  test('includes venues 19 miles away and excludes venues 21 miles away', async ({
+    client,
+    assert,
+  }) => {
+    const token = await createAccessToken()
+    const insideVenueId = await createVenue({
+      name: 'Inside Radius',
+      latitude: latitudeMilesNorth(NYC.latitude, 19),
+      longitude: NYC.longitude,
+    })
+    const outsideVenueId = await createVenue({
+      name: 'Outside Radius',
+      latitude: latitudeMilesNorth(NYC.latitude, 21),
+      longitude: NYC.longitude,
+    })
+    await createEvent(insideVenueId, {
+      name: 'Nineteen Miles Out',
+      category: 'comedy',
+      date: DateTime.fromISO('2076-09-04T22:00:00.000Z'),
+    })
+    await createEvent(outsideVenueId, {
+      name: 'Twenty One Miles Out',
+      category: 'concert',
+      date: DateTime.fromISO('2076-09-05T22:00:00.000Z'),
+    })
+
+    const response = await client.get('/api/v1/events').bearerToken(token).qs({ near: 'New York' })
+
+    response.assertStatus(200)
+    assert.deepEqual(eventNames(response.body()), ['Nineteen Miles Out'])
+  })
 })
 
 async function createAccessToken() {
@@ -167,18 +255,46 @@ async function createAccessToken() {
   return token.value!.release()
 }
 
-async function createVenue() {
+async function createVenue(
+  attrs: {
+    name?: string
+    address?: string
+    latitude?: number
+    longitude?: number
+  } = {}
+) {
+  const latitude = attrs.latitude ?? NYC.latitude
+  const longitude = attrs.longitude ?? NYC.longitude
   const [row] = await db
     .table('venues')
     .returning('id')
     .insert({
-      name: 'Test Venue',
-      address: '123 Main Street',
-      location: db.raw('ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography', [-74.0006, 40.7302]),
+      name: attrs.name ?? 'Test Venue',
+      address: attrs.address ?? '123 Main Street',
+      location: db.raw('ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography', [longitude, latitude]),
       created_at: DateTime.utc().toISO(),
     })
 
   return Number((row as { id: number }).id)
+}
+
+function stubGeocoder(): Geocoder {
+  return {
+    async forward(query) {
+      const key = query.trim().toLowerCase()
+      if (key === 'new york') {
+        return NYC
+      }
+      if (key === 'chicago') {
+        return CHICAGO
+      }
+      return null
+    },
+  }
+}
+
+function latitudeMilesNorth(latitude: number, miles: number) {
+  return latitude + (miles * 1609.344) / METERS_PER_DEGREE_LAT
 }
 
 async function createEvent(

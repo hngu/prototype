@@ -8,6 +8,7 @@ export type SearchEventsQuery = {
   date?: string;
   category?: EventCategory;
   q?: string;
+  near?: string;
 };
 
 function unwrapData<T>(payload: { data: T }): T {
@@ -27,6 +28,9 @@ export async function searchEvents(
   }
   if (filters.q?.trim()) {
     query.q = filters.q.trim();
+  }
+  if (filters.near?.trim()) {
+    query.near = filters.near.trim();
   }
 
   const response = await client.api.events.index({ query });
