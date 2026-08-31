@@ -6,6 +6,9 @@ packages:
   # Node-executable settings a learner will actually run it with, rather than
   # inheriting the site's bundler-oriented tsconfig.
   - 'src/exercises'
+  # Browser-only PDF annotator. No backend, so it stays out of the nested
+  # src/adonis workspace and lives here as a standalone SPA.
+  - 'src/pdf-annotator'
 
 # Narrow allowlist of packages permitted to run install scripts. Everything else
 # is blocked by default, which is the main defense against install-script worms.
