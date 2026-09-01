@@ -8,7 +8,7 @@ Apps prototyping new technologies
 | [`src/adonis`](src/adonis) | AdonisJS API + React SPA (`adonis.app` / `prototype.app`) |
 | [`src/elearning`](src/elearning) | Astro TypeScript learning site |
 | [`src/exercises`](src/exercises) | Graded exercise solutions for the learning site |
-| [`src/pdf-annotator`](src/pdf-annotator) | Client-only PDF text + signature annotator (`localhost:5174`) |
+| [`src/pdf-annotator`](src/pdf-annotator) | Sign PDF Online — client-only signer (`localhost:5174`) |
 
 ## Setup
 

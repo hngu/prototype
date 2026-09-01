@@ -1,7 +1,8 @@
-import { AppShell, Box, Center, Group, Stack, Text, Title } from '@mantine/core'
+import { AppShell, Box, Center, Group, Loader, Stack } from '@mantine/core'
 import { useElementSize } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ADS_ENABLED } from '../ads.ts'
 import { clampRect, type PageGeometry, type Point } from '../pdf/coords.ts'
 import { loadPdf, PdfLoadError, type LoadedPdf } from '../pdf/document.ts'
 import { annotatedFileName, buildAnnotatedPdf, downloadPdf } from '../pdf/exportPdf.ts'
@@ -16,8 +17,8 @@ import {
   newId,
   type Tool,
 } from '../state/types.ts'
+import { AdSlot } from './AdSlot.tsx'
 import { PageView } from './PageView.tsx'
-import { PdfDropzone } from './PdfDropzone.tsx'
 import { SignatureModal } from './SignatureModal.tsx'
 import { Toolbar, type TextStyle } from './Toolbar.tsx'
 
@@ -30,9 +31,21 @@ const DEFAULT_TEXT_STYLE: TextStyle = {
   color: '#111827',
 }
 
-export function Annotator() {
+export function Annotator({
+  file,
+  onFile,
+  onOpenFailed,
+}: {
+  file: File
+  onFile: (file: File) => void
+  onOpenFailed: () => void
+}) {
   const { annotations, selectedId, select, add, setRect, setText, remove, reset, undo, redo } =
     useAnnotations()
+  const resetRef = useRef(reset)
+  resetRef.current = reset
+  const onOpenFailedRef = useRef(onOpenFailed)
+  onOpenFailedRef.current = onOpenFailed
 
   const [pdf, setPdf] = useState<LoadedPdf | null>(null)
   const [opening, setOpening] = useState(false)
@@ -60,19 +73,25 @@ export function Annotator() {
     return available > 0 ? available / widest : 1
   }, [pdf, fitWidth, zoom, viewportWidth])
 
-  const openFile = useCallback(
-    async (file: File) => {
-      setOpening(true)
+  useEffect(() => {
+    let cancelled = false
+    setOpening(true)
+    void (async () => {
       try {
         const loaded = await loadPdf(file)
+        if (cancelled) {
+          void loaded.task.destroy()
+          return
+        }
         setPdf((previous) => {
           void previous?.task.destroy()
           return loaded
         })
-        reset()
+        resetRef.current()
         setTool('select')
         setPendingSignature(null)
       } catch (error) {
+        if (cancelled) return
         notifications.show({
           color: 'red',
           title: 'Could not open that PDF',
@@ -81,12 +100,15 @@ export function Annotator() {
               ? error.message
               : 'Something went wrong while reading the file.',
         })
+        onOpenFailedRef.current()
       } finally {
-        setOpening(false)
+        if (!cancelled) setOpening(false)
       }
-    },
-    [reset],
-  )
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [file])
 
   const placeAnnotation = (point: Point, geometry: PageGeometry) => {
     if (tool === 'text') {
@@ -224,23 +246,15 @@ export function Annotator() {
     return () => window.removeEventListener('beforeunload', warn)
   }, [annotations.length])
 
-  if (!pdf) {
+  if (!pdf || opening) {
     return (
-      <Center h="100vh" p="lg" bg="var(--mantine-color-gray-1)">
-        <Stack align="center" gap="lg" w="100%">
-          <Stack align="center" gap={4}>
-            <Title order={1} size="h2">
-              PDF Annotator
-            </Title>
-            <Text c="dimmed" size="sm" ta="center">
-              Add text and signatures to a PDF, then download the result.
-            </Text>
-          </Stack>
-          <PdfDropzone onFile={(file) => void openFile(file)} loading={opening} />
-        </Stack>
+      <Center h="100vh">
+        <Loader />
       </Center>
     )
   }
+
+  const viewerPad = ADS_ENABLED ? 20 : GUTTER
 
   return (
     <>
@@ -264,7 +278,7 @@ export function Annotator() {
               setZoom(next)
             }}
             onFitWidth={() => setFitWidth(true)}
-            onOpenFile={(file) => void openFile(file)}
+            onOpenFile={onFile}
             onExport={() => void handleExport()}
             exporting={exporting}
           />
@@ -272,26 +286,36 @@ export function Annotator() {
 
         <AppShell.Main>
           <Box
-            ref={viewportRef}
             style={{
               height: 'calc(100vh - 60px)',
-              overflow: 'auto',
-              background: 'var(--mantine-color-gray-2)',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            <Stack align="center" gap={GUTTER} py={GUTTER} px={GUTTER}>
-              {pdf.pages.map((geometry) => (
-                <Group key={geometry.pageIndex} gap="xs" align="flex-start" wrap="nowrap">
-                  <PageView
-                    doc={pdf.doc}
-                    geometry={geometry}
-                    cssWidth={Math.max(120, Math.round(geometry.viewWidth * factor))}
-                    tool={tool}
-                    onSurfaceClick={placeAnnotation}
-                  />
-                </Group>
-              ))}
-            </Stack>
+            <AdSlot placement="top" />
+            <Box
+              ref={viewportRef}
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                background: 'var(--mantine-color-gray-2)',
+              }}
+            >
+              <Stack align="center" gap={GUTTER} py={viewerPad} px={GUTTER}>
+                {pdf.pages.map((geometry) => (
+                  <Group key={geometry.pageIndex} gap="xs" align="flex-start" wrap="nowrap">
+                    <PageView
+                      doc={pdf.doc}
+                      geometry={geometry}
+                      cssWidth={Math.max(120, Math.round(geometry.viewWidth * factor))}
+                      tool={tool}
+                      onSurfaceClick={placeAnnotation}
+                    />
+                  </Group>
+                ))}
+              </Stack>
+            </Box>
+            <AdSlot placement="bottom" />
           </Box>
         </AppShell.Main>
       </AppShell>

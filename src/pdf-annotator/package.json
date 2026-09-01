@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Browser-only PDF annotator: text boxes and signatures, exported back to a real PDF",
+  "description": "Sign PDF Online — add a signature or text to a PDF in the browser. Nothing is uploaded.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -11,7 +11,9 @@
     "lint": "oxlint",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "verify": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
+    "og": "node scripts/make-og.mjs",
+    "check:seo": "node scripts/check-seo.ts",
+    "verify": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build && pnpm run check:seo"
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^2.9.1",

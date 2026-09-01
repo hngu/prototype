@@ -1,0 +1,9 @@
+# Authorized Digital Sellers — https://iabtechlab.com/ads-txt/
+#
+# Empty until an ad network is live. Serving an ads.txt with no authorized
+# sellers is correct and safe: it tells buyers that nobody is currently
+# authorized to sell inventory on this domain, which is exactly true.
+#
+# When Media.net (or Adsterra display) is approved, replace this file with
+# the line they supply, for example:
+#   media.net, PUBLISHER_ID, DIRECT
