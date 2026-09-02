@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@api-starter-kit/backend": "workspace:*",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@mantine/carousel": "^9.5.0",
     "@mantine/charts": "^9.5.0",
     "@mantine/code-highlight": "^9.5.0",
@@ -44,6 +46,7 @@
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@rolldown/plugin-babel": "^0.2.3",
+    "@rolldown/plugin-emotion": "^0.2.0",
     "@types/babel__core": "^7.20.5",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",

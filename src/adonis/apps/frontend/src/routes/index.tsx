@@ -8,6 +8,7 @@ import { ShortURL } from "./ShortURL";
 import { AuthProvider } from "../providers/AuthProvider";
 import { Signup } from "./Auth/Signup";
 import { BookTicket } from "./BookTicket";
+import { Sandbox } from "./Sandbox";
 
 export const LOGIN_ROUTE = '/app/login';
 export const SIGNUP_ROUTE = '/app/signup';
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
             Component: Signup,
           },
         ],
+      },
+      {
+        path: '/app/sandbox',
+        Component: Sandbox,
       },
       {
         path: "/app/shorturl",
