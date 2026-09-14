@@ -14,9 +14,9 @@ export default defineConfig({
     host: true,
     allowedHosts: ['prototype.app'],
     hmr: {
-      host: 'prototype.app',
-      protocol: 'wss',
-      clientPort: 443,
+      host: 'localhost',
+      protocol: 'ws',
+      clientPort: 5173,
     },
   },
 })
