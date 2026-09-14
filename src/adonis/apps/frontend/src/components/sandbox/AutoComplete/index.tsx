@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useDebounce } from "../../../hooks/useDebounce";
 import styled from "@emotion/styled";
 
 type Product = {
@@ -55,28 +56,7 @@ const fetchProducts = async () => {
 //   };
 // };
 
-const useDebounce = (callback, delay = 500) => {
-  // use refs so these survive between renders
-  const timeoutRef = useRef(null);
-  const fnRef = useRef(callback);
 
-  // clear timeout on unmount
-  useEffect(() => {
-    return () => clearTimeout(timeoutRef.current);
-  }, []);
-
-  // update fnRef on every render to get latest callback
-  useEffect(() => {
-    fnRef.current = callback;
-  });
-
-  return useCallback((...args) => {
-    clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      fnRef.current(...args);
-    }, delay);
-  }, [delay]);
-};
 
 export const AutoComplete = () => {
   const [input, setInput] = useState('');
@@ -94,6 +74,11 @@ export const AutoComplete = () => {
   }, []);
 
   const debouncedFilterSuggestions = useDebounce((text: string) => {
+    let trimmed = text.trim();
+    if (trimmed === '') {
+      setSuggestions([]);
+      return;
+    }
     setSuggestions(products.filter(product => product.title.indexOf(text) >= 0));
   });
 
@@ -106,6 +91,7 @@ export const AutoComplete = () => {
   const handleSuggestionClick = (suggestion: Product) => {
     setSelectedSuggestion(suggestion);
     setSuggestions([]);
+    setInput('');
   };
 
   return (
