@@ -1,21 +1,13 @@
 import { useEffect, useState } from "react";
 import { useDebounce } from "../../../hooks/useDebounce";
 import styled from "@emotion/styled";
+import type { Product, ProductResponse } from "../../../api/dummyProduct";
 
-type Product = {
-  title: string;
-  description: string;
-  brand: string;
-  category: string;
-  id: number;
-  images: string[];
-  price: number;
-}
-
-type ProductResponse = {
-  products: Product[];
-};
-
+/**
+ * Simple implementation without keyboard navigation
+ * Just need to understand how debounce and throttle works and
+ * write the hooks for them.
+ */
 const Wrapper = styled.div`
   display: inline-block;
   position: relative;
