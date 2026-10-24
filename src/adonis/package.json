@@ -27,6 +27,6 @@
     "esbuild": true,
     "fsevents": true
   },
-  "packageManager": "pnpm@9.12.3",
+  "packageManager": "pnpm@11.20.0",
   "prettier": "@adonisjs/prettier-config"
 }
