@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Issue a locally trusted TLS cert for adonis.app and prototype.app.
+# Issue a locally trusted TLS certificate for adonis.app and prototype.app.
 # Browsers HSTS-preload the .app TLD, so HTTPS is required.
 set -euo pipefail
 

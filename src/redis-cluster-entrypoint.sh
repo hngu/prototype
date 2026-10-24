@@ -1,4 +1,13 @@
 #!/bin/sh
+# Runs a 6-node local Redis Cluster (3 primaries + 3 replicas) in one container.
+#
+# Why one container instead of six: cluster nodes tell clients where to
+# redirect (MOVED), so they must announce addresses the host can reach.
+# Sharing one network namespace lets every node announce 127.0.0.1:<port>,
+# which works for node-to-node gossip, for host clients via the port mappings,
+# and for RedisInsight (network_mode: service:redis-cluster). Separate
+# containers would have to announce either Docker IPs (unreachable from the
+# host) or 127.0.0.1 (where each node would only find itself).
 set -eu
 
 PORTS="7001 7002 7003 7004 7005 7006"
@@ -23,6 +32,14 @@ start_node() {
     --daemonize no &
 }
 
+# Check before starting nodes: redis-server creates nodes-*.conf on startup.
+# Persisted node configs mean the cluster already exists. Creating it again
+# fails with "Node is not empty" and takes the container down (set -e).
+CLUSTER_EXISTS=no
+if [ -f /data/nodes-7001.conf ]; then
+  CLUSTER_EXISTS=yes
+fi
+
 for port in $PORTS; do
   start_node "$port"
 done
@@ -39,9 +56,7 @@ wait_for_cluster_ok() {
   done
 }
 
-# Persisted node configs mean the cluster already exists. Creating it again
-# fails with "Node is not empty" and takes the container down (set -e).
-if [ -f /data/nodes-7001.conf ]; then
+if [ "$CLUSTER_EXISTS" = yes ]; then
   echo "cluster config found, waiting for cluster_state:ok"
   wait_for_cluster_ok
   echo "cluster already initialized"

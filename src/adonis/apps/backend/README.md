@@ -97,6 +97,26 @@ This backend workspace is designed to help you build production-ready APIs with 
 
 ## 🚀 Quick Start
 
+### Environment Setup
+
+The backend will not start without a `.env` file. Create one from the example and generate an app key (from apps/backend):
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Generate APP_KEY and write it to .env
+node ace generate:key
+```
+
+Then adjust the values in `.env` as needed — in particular the PostgreSQL (`PG_*`) credentials and `REDIS_NODES` to match your local services. `.env` is gitignored, so never commit it.
+
+Once the database is reachable, run the migrations to create the schema:
+
+```bash
+node ace migration:run
+```
+
 ### From the Monorepo Root
 
 ```bash
