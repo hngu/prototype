@@ -1,0 +1,29 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended"],
+
+  // Toolchain only for now. App deps and docker-compose stay with Dependabot
+  // (.github/dependabot.yml).
+  enabledManagers: ["asdf", "npm"],
+
+  // Shorter than the app-dep cooldown (Dependabot 5d) so security releases
+  // land quickly; 1 day still catches a botched or pulled release.
+  // "strict" holds back the branch/PR until the release is old enough.
+  minimumReleaseAge: "1 day",
+  internalChecksFilter: "strict",
+
+  packageRules: [
+    // The npm manager is only here for package.json "packageManager";
+    // every other dep in package.json is left to Dependabot.
+    { matchManagers: ["npm"], enabled: false },
+    { matchManagers: ["npm"], matchDepTypes: ["packageManager"], enabled: true },
+
+    // .tool-versions and "packageManager" must move together, or pnpm runs
+    // the packageManager version regardless of what asdf installed.
+    { matchManagers: ["asdf", "npm"], groupName: "toolchain" },
+
+    // Stay on Node 24 LTS / pnpm 11 by default; a major (Node 26, pnpm 12)
+    // only gets a PR after approval in the Dependency Dashboard issue.
+    { matchUpdateTypes: ["major"], dependencyDashboardApproval: true },
+  ],
+}

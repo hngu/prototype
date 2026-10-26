@@ -9,6 +9,8 @@ updates:
     # Hold off on releases until they've been public for a while, so a
     # compromised publish (e.g. npm worms) is caught and pulled first.
     # Kept 1 day above pnpm's minimumReleaseAge (4d) so bumps never fail its check.
+    # Toolchain (Node, pnpm) is handled by Renovate with a 1-day cooldown
+    # (.github/renovate.json5).
     cooldown:
       default-days: 5
       semver-major-days: 14
