@@ -54,7 +54,7 @@
     "hot-hook": "^1.0.0",
     "pino-pretty": "^13.2.0",
     "prettier": "^3.9.10",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "youch": "^4.1.1"
   },
   "dependencies": {
