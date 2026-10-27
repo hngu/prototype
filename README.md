@@ -32,3 +32,5 @@ Then go to backend and frontend apps and read their READMEs for additional setup
 - Software engineering jobs insights
 - stock tools
 - personal blog
+  - timezones
+  - internationalization 
