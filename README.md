@@ -26,3 +26,8 @@ Local domains `adonis.app` and `prototype.app` must resolve to `127.0.0.1`, and 
 Then run docker compose from `src`: `docker compose up`
 
 Then go to backend and frontend apps and read their READMEs for additional setup
+
+## Ideas
+- Setup RAG agent
+- Software engineering jobs insights
+- stock tools
