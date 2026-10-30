@@ -1,0 +1,9 @@
+# Hand-picked company job boards to track from day one.
+#
+# Each entry: { ats: greenhouse | lever | ashby, slug: <board slug>, name: <company name> }
+# Optional: region: eu (for EU-hosted boards).
+#
+# Never invent a slug (CLAUDE.md rule 3): add a board only after its API has returned a
+# valid response. Filled in Milestone 2.
+
+boards: []

@@ -7,10 +7,11 @@ Apps prototyping new technologies
 | Path | What |
 | --- | --- |
 | [`src/adonis`](src/adonis) | AdonisJS API + React SPA (`adonis.app` / `prototype.app`) |
+| [`src/jobs-report`](src/jobs-report) | Job Insights: daily collector of software-engineering job postings (Python, uv) |
 
 ## Setup
 
-Node and pnpm versions are pinned in `.tool-versions` (asdf). Renovate opens PRs to bump them, together with `packageManager` in `src/adonis/package.json`; after merging one, run `asdf install`.
+Node, pnpm and uv versions are pinned in `.tool-versions` (asdf). Renovate opens PRs to bump them, together with `packageManager` in `src/adonis/package.json`; after merging one, run `asdf install`.
 
 First, run `asdf install` to install the ASDF dependencies
 

@@ -1,0 +1,305 @@
+# Sources this project may call (CLAUDE.md rule 1). Anything not listed here,
+# or listed with `enabled: false`, is never fetched.
+#
+# Per source:
+#   enabled       only true once the source's adapter exists and is tested
+#   kind          board (one company's ATS job board) | feed (aggregator / partial list)
+#   snapshot      true if one fetch returns a company's complete board (closures inferable)
+#   endpoint      request template, as documented
+#   auth          none | the env vars from .env.example it needs
+#   rate_limit    basis: documented (stated by the source) | self-imposed (docs are silent,
+#                 so we set a polite default)
+#   quota         monthly call budget enforced via `quota_usage`, null if none
+#   terms_notes   usage and attribution terms, quoted or paraphrased from the docs
+#   doc_url       official docs read for this entry
+#   verified_at   date the docs were read (UTC)
+#   unverified    facts the docs did not confirm; resolve before enabling
+#   hash_exclude  volatile fields left out of the archive hash only (PLAN.md §5.4)
+
+sources:
+  # --- Company job boards (snapshot) -------------------------------------------------
+
+  greenhouse:
+    enabled: false
+    kind: board
+    snapshot: true
+    endpoint: https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true
+    detail_endpoint: https://boards-api.greenhouse.io/v1/boards/{slug}/jobs/{job_id}?pay_transparency=true
+    auth: none
+    rate_limit: { basis: self-imposed, requests_per_minute: 60, concurrency: 4 }
+    quota: null
+    terms_notes: >-
+      "Job Board data is publicly available, so authentication is not required for any
+      GET endpoints." content=true adds description, departments and offices.
+      pay_transparency=true on the single-job endpoint adds `pay_input_ranges`
+      (min_cents, max_cents, currency_type, title, blurb). List response ends with
+      meta.total. No rate limits or terms of use stated.
+    doc_url: https://docs.greenhouse.io/job-board.html
+    verified_at: "2026-10-29"
+    unverified:
+      - EU-hosted boards (job-boards.eu.greenhouse.io) and their API host are not mentioned
+        in the docs; confirm with a live probe before adding EU boards (Milestone 3).
+    hash_exclude: []
+
+  lever:
+    enabled: false
+    kind: board
+    snapshot: true
+    endpoint: https://api.lever.co/v0/postings/{slug}?mode=json
+    eu_endpoint: https://api.eu.lever.co/v0/postings/{slug}?mode=json
+    auth: none
+    rate_limit: { basis: self-imposed, requests_per_minute: 60, concurrency: 4 }
+    quota: null
+    terms_notes: >-
+      Global and EU base URLs are both documented. Optional `skip` / `limit` pagination.
+      `salaryRange` is an optional object with currency, interval, min, max.
+      `workplaceType` is one of unspecified, on-site, remote, hybrid. "All job postings in
+      the published state are publicly viewable." Only the application POST is rate-limited
+      (2/s); no limit stated for GET, no terms of use section.
+    doc_url: https://github.com/lever/postings-api
+    verified_at: "2026-10-29"
+    unverified:
+      - Whether an unpaginated request always returns the whole board (no max `limit`
+        stated); check against a large board when writing the adapter.
+      - No `createdAt` field is documented, though responses may include it.
+    hash_exclude: []
+
+  ashby:
+    enabled: false
+    kind: board
+    snapshot: true
+    endpoint: https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true
+    auth: none
+    rate_limit: { basis: self-imposed, requests_per_minute: 60, concurrency: 4 }
+    quota: null
+    terms_notes: >-
+      Response has apiVersion ("1") and jobs[]. Jobs carry publishedAt, isListed,
+      workplaceType (OnSite | Remote | Hybrid), employmentType (FullTime | PartTime |
+      Intern | Contract | Temporary), descriptionHtml/Plain, jobUrl, applyUrl.
+      Compensation is included when includeCompensation=true. No rate limits or terms stated.
+    doc_url: https://developers.ashbyhq.com/docs/public-job-posting-api
+    verified_at: "2026-10-29"
+    unverified:
+      - The docs' field table puts compensation under each job, but the example shows it at
+        the top level; check a real response.
+      - Unlisted jobs (isListed=false) may appear; decide whether to keep them.
+    hash_exclude: []
+
+  workable:
+    enabled: false
+    kind: board
+    snapshot: true
+    endpoint: https://www.workable.com/api/accounts/{slug}?details=true
+    auth: none
+    rate_limit: { basis: self-imposed, requests_per_minute: 30, concurrency: 2 }
+    quota: null
+    terms_notes: >-
+      Documented under "Public Endpoints": returns the account's public jobs in one
+      response (name, description, jobs[]); details=true includes job descriptions. No
+      pagination, rate limits or terms stated. The apply.workable.com widget URL is not in
+      the official docs, so it is not used. Optional source (after Milestone 4).
+    doc_url: https://workable.readme.io/reference/jobs-1
+    verified_at: "2026-10-29"
+    unverified: []
+    hash_exclude: []
+
+  smartrecruiters:
+    enabled: false
+    kind: board
+    snapshot: true
+    endpoint: https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit={limit}&offset={offset}
+    auth: none
+    rate_limit: { basis: self-imposed, requests_per_minute: 30, concurrency: 2 }
+    quota: null
+    terms_notes: >-
+      "Lists active postings published by given company." Paginated with limit/offset;
+      response has totalFound and content[]. The documented example call has no auth header.
+      Optional source (after Milestone 4).
+    doc_url: https://developers.smartrecruiters.com/docs/posting-api
+    verified_at: "2026-10-29"
+    unverified:
+      - The docs say the Posting API "supports both API Key and OAuth 2.0" but don't say
+        whether listing works without credentials; confirm with a live probe.
+      - Maximum `limit` (in the API reference tab, not read).
+    hash_exclude: []
+
+  recruitee:
+    enabled: false
+    kind: board
+    snapshot: true
+    endpoint: https://{slug}.recruitee.com/api/offers/
+    auth: none (until 2027-02-10)
+    rate_limit: { basis: self-imposed, requests_per_minute: 30, concurrency: 2 }
+    quota: null
+    terms_notes: >-
+      Careers Site API: returns published offers[] in one response, no pagination. From
+      2027-02-10 every call needs an X-Careers-Sites-Token header generated inside the
+      company's own Recruitee account, so third-party collection stops working then unless
+      the docs change. Not worth building before that is resolved.
+    doc_url: https://docs.recruitee.com/reference/intro-to-careers-site-api
+    verified_at: "2026-10-29"
+    unverified: []
+    hash_exclude: []
+
+  # --- Feeds (partial; closures not inferable) ---------------------------------------
+
+  adzuna:
+    enabled: false
+    kind: feed
+    snapshot: false
+    endpoint: >-
+      https://api.adzuna.com/v1/api/jobs/{country}/search/{page}?app_id={app_id}&app_key={app_key}&category=it-jobs&results_per_page=50&max_days_old=1&sort_by=date
+    auth: ADZUNA_APP_ID, ADZUNA_APP_KEY
+    countries: [us]
+    rate_limit: { basis: self-imposed, requests_per_minute: 10, concurrency: 1 }
+    quota: { calls_per_month: null }
+    terms_notes: >-
+      app_id and app_key are required on every call. `it-jobs` is the "IT Jobs" category
+      tag. Permitted uses: personal job search, publishing Adzuna ad listings, Jobsworth
+      salary estimates, "Personal and academic research"; "commercial analysis, resale of
+      data ... requires our written agreement". Displayed ads must carry the word "Adzuna"
+      hyperlinked to the local Adzuna domain. "The free tier is intended for evaluating the
+      API"; limits "are shown in your account". Do not republish Adzuna data in a public
+      dataset without checking these terms again.
+    doc_url: https://developer.adzuna.com/docs/terms_of_service
+    verified_at: "2026-10-29"
+    unverified:
+      - Monthly call budget (calls_per_month) is only shown in the logged-in developer
+        dashboard; must be set before enabling.
+      - The `category` search filter, max results_per_page (50?), max_days_old and
+        sort_by=date are in the interactive /activedocs reference, which could not be read.
+      - Supported country codes.
+    hash_exclude: []
+
+  themuse:
+    enabled: false
+    kind: feed
+    snapshot: false
+    endpoint: https://www.themuse.com/api/public/jobs?page={page}&category={category}&api_key={api_key}
+    auth: THEMUSE_API_KEY
+    categories: [Software Engineering, Software Engineer, Data and Analytics, Data Science, Computer and IT, IT]
+    rate_limit: { basis: documented, requests_per_hour: 3600, requests_per_hour_without_key: 500, concurrency: 1 }
+    quota: null
+    terms_notes: >-
+      20 results per page; `page` is required. 3,600 requests/hour with api_key, 500
+      without, and "Registration is required for any use beyond testing", so the key is
+      effectively required. Native `level` values: Entry Level, Mid Level, Senior Level,
+      management, Internship. Terms: content shown must link back to themuse.com; no
+      redistributing or cloning Muse content, so it can't go in a published dataset.
+      403 usually means a rate limit was hit.
+    doc_url: https://www.themuse.com/developers/api/v2
+    verified_at: "2026-10-29"
+    unverified: []
+    hash_exclude: []
+
+  remotive:
+    enabled: false
+    kind: feed
+    snapshot: false
+    endpoint: https://remotive.com/api/remote-jobs?category=software-dev
+    auth: none
+    rate_limit: { basis: documented, max_fetches_per_day: 4, requests_per_minute: 2, concurrency: 1 }
+    quota: null
+    terms_notes: >-
+      "We advise max. 4 times a day"; "more than 2x per minute will be blocked". Listings
+      are delayed 24 hours. Must "link back to the URL found on Remotive AND mention Remotive
+      as a source" or API access is terminated. Don't submit Remotive jobs to third-party
+      sites (Jooble, Google Jobs, LinkedIn Jobs, ...) or use them to collect sign-ups.
+    doc_url: https://github.com/remotive-com/remote-jobs-api
+    verified_at: "2026-10-29"
+    unverified: []
+    hash_exclude: []
+
+  remoteok:
+    enabled: false
+    kind: feed
+    snapshot: false
+    endpoint: https://remoteok.com/api
+    auth: none
+    rate_limit: { basis: self-imposed, max_fetches_per_day: 1, concurrency: 1 }
+    quota: null
+    terms_notes: >-
+      The first array element is a legal notice, not a job: "Please link back (with
+      follow, and without nofollow!) to the URL on Remote OK and mention Remote OK as a
+      source ... If you do not we'll have to suspend API access." Don't use the Remote OK
+      logo without written permission; the name is fine. There is no separate docs page
+      (/api-docs is a 404); the terms live in the response itself.
+    doc_url: https://remoteok.com/api
+    verified_at: "2026-10-29"
+    unverified:
+      - No rate limit is stated; one fetch per run is self-imposed.
+    hash_exclude: []
+
+  usajobs:
+    enabled: false
+    kind: feed
+    snapshot: false
+    endpoint: https://data.usajobs.gov/api/Search?JobCategoryCode=2210&ResultsPerPage=500&DatePosted=1&Page={page}
+    auth: USAJOBS_API_KEY, CONTACT_EMAIL
+    rate_limit: { basis: self-imposed, requests_per_minute: 30, concurrency: 1 }
+    quota: null
+    terms_notes: >-
+      Headers: Host = data.usajobs.gov, User-Agent = the email used to request the key
+      (exactly, not our usual User-Agent string), Authorization-Key = the key.
+      ResultsPerPage up to 500; at most 10,000 rows per query; DatePosted 0-60 days. Public
+      data under an open license: may be stored, analyzed and redistributed, including
+      commercially. OPM encourages naming USAJOBS as the source, linking the announcement
+      and giving the retrieval date. Don't circumvent rate limits or share credentials; OPM
+      may add limits without notice.
+    doc_url: https://developer.usajobs.gov/api-reference/get-api-Search
+    other_docs:
+      - https://developer.usajobs.gov/guides/authentication
+      - https://developer.usajobs.gov/guides/rate-limiting
+      - https://developer.usajobs.gov/guides/terms-of-service
+    verified_at: "2026-10-29"
+    unverified: []
+    hash_exclude: []
+
+  hn:
+    enabled: false
+    kind: feed
+    snapshot: false
+    endpoint: https://hn.algolia.com/api/v1/search_by_date?tags=story,author_whoishiring
+    item_endpoint: https://hacker-news.firebaseio.com/v0/item/{id}.json
+    auth: none
+    rate_limit: { basis: self-imposed, requests_per_minute: 60, concurrency: 4 }
+    quota: null
+    terms_notes: >-
+      HN Firebase API: items at /v0/item/<id>.json; "There is currently no rate limit."
+      Raw top-level comments go to hn_comments; turning them into postings is Phase 2.
+    doc_url: https://github.com/HackerNews/API
+    other_docs:
+      - https://hn.algolia.com/api
+    verified_at: "2026-10-29"
+    unverified:
+      - The Algolia HN Search docs page is client-rendered and couldn't be read. Its
+        endpoints (search_by_date, tags such as author_whoishiring, items/:id),
+        hitsPerPage maximum and per-IP rate limit need checking in a browser before
+        Milestone 4.
+    hash_exclude: []
+
+  jsearch:
+    # Paid API (RapidAPI). Off by default and only ever used for company discovery.
+    enabled: false
+    kind: feed
+    snapshot: false
+    endpoint: null
+    auth: JSEARCH_RAPIDAPI_KEY
+    rate_limit: { basis: self-imposed, requests_per_minute: 5, concurrency: 1 }
+    quota: { calls_per_month: null }
+    terms_notes: Optional and paid. Use only for company discovery if ever enabled.
+    doc_url: https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch
+    verified_at: "2026-10-29"
+    unverified:
+      - The RapidAPI page is client-rendered; endpoint, free-plan quota and rate limit
+        could not be read. Check the pricing tab in a browser before enabling.
+    hash_exclude: []
+
+# Never fetched (CLAUDE.md rule 1, PLAN.md §3.3).
+excluded:
+  we_work_remotely: Its API terms prohibit building a job search service on its data.
+  linkedin: Terms-of-service risk; this repo is public.
+  indeed: Terms-of-service risk; this repo is public.
+  glassdoor: Terms-of-service risk; this repo is public.
+  ziprecruiter: Terms-of-service risk; this repo is public.
+  jobspy_style_scrapers: Scrape the sites above; same terms-of-service risk.

@@ -1,0 +1,47 @@
+[project]
+name = "job-insights"
+version = "0.1.0"
+description = "Daily collector of software-engineering job postings from free, official sources."
+readme = "README.md"
+authors = [{ name = "Huy" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pyyaml>=6.0",
+    "typer>=0.12",
+]
+
+[project.scripts]
+jobs = "jobinsights.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+# Only resolve releases that have been public for 4 days, so a compromised
+# publish is caught and pulled first. One day under Dependabot's 5-day
+# cooldown (.github/dependabot.yml), so its bumps always resolve.
+exclude-newer = "4 days"
+
+[tool.uv.build-backend]
+module-name = "jobinsights"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Live network tests are opt-in: `uv run pytest -m live` overrides this -m.
+addopts = ["-ra", "--strict-markers", "-m", "not live"]
+markers = ["live: hits real network endpoints; opt in with `-m live`"]

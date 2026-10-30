@@ -1,0 +1,45 @@
+# Runtime settings. Secrets live in .env, never here.
+
+paths:
+  jobs_db: data/jobs.sqlite
+  archive_db: data/archive.sqlite
+  duckdb: data/jobs.duckdb
+  exports_dir: data/exports
+  reports_dir: data/reports
+  backups_dir: data/backups
+  logs_dir: data/logs
+
+archive:
+  # Raw archive window (PLAN.md §5.4). Don't shorten without asking (CLAUDE.md rule 13).
+  retention_days: 90
+  vacuum_weekday: sunday
+
+backups:
+  # Daily gzipped copies of jobs.sqlite.
+  keep: 7
+
+http:
+  timeout_seconds: 30
+  max_retries: 4
+  backoff_base_seconds: 1.0
+  backoff_max_seconds: 60
+
+caps:
+  # Greenhouse single-job requests for pay ranges, new postings only.
+  greenhouse_pay_enrichment_per_run: 200
+  # Candidate boards probed by discovery in one run.
+  discovery_validations_per_run: 200
+
+reconcile:
+  # A posting closes after this many consecutive successful fetches without it.
+  absences_to_close: 2
+  # A board dropping from more than this many open postings to 0 holds closures.
+  suspicious_drop_min_open: 20
+
+health:
+  item_count_drop_ratio: 0.5       # warn below 50% of the trailing 7-run median
+  board_failures_warn: 3           # list boards with this many consecutive failures
+  inactive_after_404s: 7
+  closure_share_warn: 0.3          # flag closures above 30% of a board's open postings
+  freshness_warn_hours: 36
+  storage_warn_gb: 8

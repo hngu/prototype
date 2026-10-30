@@ -9,8 +9,23 @@ updates:
     # Hold off on releases until they've been public for a while, so a
     # compromised publish (e.g. npm worms) is caught and pulled first.
     # Kept 1 day above pnpm's minimumReleaseAge (4d) so bumps never fail its check.
-    # Toolchain (Node, pnpm) is handled by Renovate with a 1-day cooldown
+    # Toolchain (Node, pnpm, uv) is handled by Renovate with a 1-day cooldown
     # (.github/renovate.json5).
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  # Python deps for jobs-report (uv.lock)
+  - package-ecosystem: "uv"
+    directory: "/src/jobs-report"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    # Same cooldowns as npm. Kept 1 day above uv's exclude-newer (4 days in
+    # src/jobs-report/pyproject.toml) so bumps always resolve.
     cooldown:
       default-days: 5
       semver-major-days: 14

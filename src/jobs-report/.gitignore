@@ -1,0 +1,17 @@
+# Local data: databases, raw archive, exports, logs. Never published.
+data/
+
+# Secrets
+.env
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
