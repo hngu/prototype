@@ -80,3 +80,4 @@ Keep this list current as commands are added.
 - All timestamps are UTC ISO-8601. `run_date` is `YYYY-MM-DD`.
 - Log structured JSON lines to stdout. Each log line includes `run_id` and `source` where relevant.
 - Prefer clear SQL over clever ORMs; no ORM.
+- `docs/glossary.md` defines the project's terms in plain language. A change that introduces a new term adds it there too.

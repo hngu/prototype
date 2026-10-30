@@ -20,9 +20,18 @@ backups:
 
 http:
   timeout_seconds: 30
-  max_retries: 4
+  # Quick retries of one request, for brief blips. Longer outages are handled by
+  # `collect` below. The two multiply, so a dead board costs at most
+  # (collect.retries + 1) x (max_retries + 1) = 12 requests.
+  max_retries: 2
   backoff_base_seconds: 1.0
   backoff_max_seconds: 60
+
+collect:
+  # Rounds of re-fetching only the boards that failed, before processing the rest.
+  retries: 3
+  # Wait before the first round; doubles each round: 30s, 1m, 2m.
+  retry_backoff_seconds: 30
 
 caps:
   # Greenhouse single-job requests for pay ranges, new postings only.
@@ -35,6 +44,8 @@ reconcile:
   absences_to_close: 2
   # A board dropping from more than this many open postings to 0 holds closures.
   suspicious_drop_min_open: 20
+  # On this many zero-job runs in a row the drop is believed, and the held postings close.
+  zero_job_runs_to_release: 3
 
 health:
   item_count_drop_ratio: 0.5       # warn below 50% of the trailing 7-run median

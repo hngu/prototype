@@ -22,6 +22,8 @@ roadmap.
    posting's open spans and change history.
 3. A DuckDB database and Parquet exports are rebuilt from SQLite for analysis.
 
+New to the vocabulary (spans, manifests, snapshots)? See the [glossary](docs/glossary.md).
+
 ## Sources
 
 Only free, official endpoints are used, and each is checked against its docs before an adapter
