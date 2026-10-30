@@ -1,14 +1,18 @@
 """The `jobs` command-line interface.
 
-Milestone 0 only declares the commands and their flags; each one is a stub
-that fails loudly until the milestone noted in its message implements it.
+Commands not built yet are stubs that fail loudly, naming the milestone that
+implements them. Commands run against the project in the current directory.
 """
 
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, NoReturn
 
 import typer
+
+from jobinsights.config import Settings
+from jobinsights.store import db
 
 RUN_DATE_FORMAT = "%Y-%m-%d"
 
@@ -22,16 +26,48 @@ def _not_implemented(command: str, milestone: str) -> NoReturn:
     raise typer.Exit(code=1)
 
 
+def _migrate_databases(settings: Settings) -> None:
+    targets = [
+        (settings.paths.jobs_db, db.MIGRATIONS_DIR),
+        (settings.paths.archive_db, db.ARCHIVE_MIGRATIONS_DIR),
+    ]
+    for path, migrations_dir in targets:
+        try:
+            with closing(db.connect(path)) as conn:
+                applied = db.migrate(conn, migrations_dir)
+        except db.MigrationError as exc:
+            typer.echo(f"{path.name}: {exc}", err=True)
+            raise typer.Exit(code=1) from exc
+        outcome = f"applied {', '.join(applied)}" if applied else "up to date"
+        typer.echo(f"{path.name}: {outcome}")
+
+
 @db_app.command("init")
 def db_init() -> None:
     """Create data/jobs.sqlite and data/archive.sqlite and apply all migrations."""
-    _not_implemented("db init", "1")
+    settings = Settings.load()
+    for directory in (
+        settings.paths.jobs_db.parent,
+        settings.paths.archive_db.parent,
+        settings.paths.exports_dir,
+        settings.paths.reports_dir,
+        settings.paths.backups_dir,
+        settings.paths.logs_dir,
+    ):
+        directory.mkdir(parents=True, exist_ok=True)
+    _migrate_databases(settings)
 
 
 @db_app.command("migrate")
 def db_migrate() -> None:
     """Apply pending migrations to both databases."""
-    _not_implemented("db migrate", "1")
+    settings = Settings.load()
+    missing = [p for p in (settings.paths.jobs_db, settings.paths.archive_db) if not p.exists()]
+    if missing:
+        names = ", ".join(p.name for p in missing)
+        typer.echo(f"{names} not found; run `jobs db init` first.", err=True)
+        raise typer.Exit(code=1)
+    _migrate_databases(settings)
 
 
 @db_app.command("build-duckdb")

@@ -6,6 +6,7 @@ readme = "README.md"
 authors = [{ name = "Huy" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "pydantic>=2.14.1",
     "pyyaml>=6.0",
     "typer>=0.12",
 ]
