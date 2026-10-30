@@ -38,7 +38,8 @@ def html_to_text(html: str) -> str:
     """Convert an HTML description to normalized plain text.
 
     Line breaks come only from the document structure: paragraphs and headings
-    are separated by a blank line, list items and `<br>` by a line break.
+    are separated by a blank line, list items and `<br>` by a line break. A
+    `<p>` directly inside an `<li>` counts as a line, not a paragraph.
     Whitespace inside text collapses to single spaces, as a browser renders it.
     """
     tree = LexborHTMLParser(html)
@@ -76,7 +77,7 @@ def html_to_text(html: str) -> str:
             pending_breaks = min(pending_breaks + 1, 2)
             continue
         if tag in _PARAGRAPH_TAGS or tag in _LINE_TAGS:
-            breaks = 2 if tag in _PARAGRAPH_TAGS else 1
+            breaks = 2 if tag in _PARAGRAPH_TAGS and not _is_list_item_paragraph(item) else 1
             pending_breaks = max(pending_breaks, breaks)
             stack.append(breaks)
         elif tag in _CELL_TAGS:
@@ -84,6 +85,11 @@ def html_to_text(html: str) -> str:
         stack.extend(reversed(list(item.iter(include_text=True))))
 
     return normalize_text("".join(out))
+
+
+def _is_list_item_paragraph(node: LexborNode) -> bool:
+    # Editors often wrap each <li> in a <p>; render those as lines, not paragraphs.
+    return node.tag == "p" and node.parent is not None and node.parent.tag == "li"
 
 
 def normalize_text(text: str) -> str:

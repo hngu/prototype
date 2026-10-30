@@ -17,6 +17,12 @@ from jobinsights.descriptions import (
         ("<h2>About</h2><p>We build things.</p>", "About\n\nWe build things."),
         ("<ul>\n  <li>Python</li>\n  <li>SQL</li>\n</ul>", "Python\nSQL"),
         ("<p>Intro</p><ul><li>a</li><li>b</li></ul><p>Outro</p>", "Intro\n\na\nb\n\nOutro"),
+        (
+            "<ul><li><p>Design APIs</p></li><li><p>Own services</p></li></ul>",
+            "Design APIs\nOwn services",
+        ),
+        ("<ul><li><p>First</p><p>Second</p></li></ul>", "First\nSecond"),
+        ("<p>Intro</p><ul><li><p>a</p></li></ul><p>Outro</p>", "Intro\n\na\n\nOutro"),
         ("<p>Line one<br>Line two</p>", "Line one\nLine two"),
         ("<p>Para one<br><br>Para two</p>", "Para one\n\nPara two"),
         ("<div>a</div><div>b</div>", "a\nb"),
