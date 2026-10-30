@@ -70,16 +70,46 @@ def db_migrate() -> None:
     _migrate_databases(settings)
 
 
+def _echo_counts(counts: dict[str, int]) -> None:
+    width = max((len(table) for table in counts), default=0)
+    for table, rows in counts.items():
+        typer.echo(f"  {table:<{width}}  {rows:>9,}")
+
+
 @db_app.command("build-duckdb")
 def db_build_duckdb() -> None:
     """Rebuild data/jobs.duckdb from SQLite."""
-    _not_implemented("db build-duckdb", "1")
+    import duckdb  # deferred: only these commands need it
+
+    from jobinsights.store.duckdb_build import build_duckdb
+
+    settings = Settings.load()
+    if not settings.paths.jobs_db.exists():
+        typer.echo(f"{settings.paths.jobs_db.name} not found; run `jobs db init` first.", err=True)
+        raise typer.Exit(code=1)
+    try:
+        counts = build_duckdb(settings.paths.jobs_db, settings.paths.duckdb)
+    except duckdb.Error as exc:
+        typer.echo(f"DuckDB build failed: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"{settings.paths.duckdb.name}: rebuilt {len(counts)} tables")
+    _echo_counts(counts)
 
 
 @db_app.command("export")
 def db_export() -> None:
     """Write one Parquet file per table to data/exports/."""
-    _not_implemented("db export", "1")
+    from jobinsights.store.duckdb_build import export_parquet
+
+    settings = Settings.load()
+    if not settings.paths.duckdb.exists():
+        typer.echo(
+            f"{settings.paths.duckdb.name} not found; run `jobs db build-duckdb` first.", err=True
+        )
+        raise typer.Exit(code=1)
+    counts = export_parquet(settings.paths.duckdb, settings.paths.exports_dir)
+    typer.echo(f"{settings.paths.exports_dir}: wrote {len(counts)} Parquet files")
+    _echo_counts(counts)
 
 
 @app.command()

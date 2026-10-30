@@ -6,6 +6,8 @@ readme = "README.md"
 authors = [{ name = "Huy" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "duckdb>=2.0.0",
+    "numpy>=2.5.4",
     "pydantic>=2.14.1",
     "pyyaml>=6.0",
     "selectolax>=1.0.2",
@@ -44,6 +46,10 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# Live network tests are opt-in: `uv run pytest -m live` overrides this -m.
-addopts = ["-ra", "--strict-markers", "-m", "not live"]
-markers = ["live: hits real network endpoints; opt in with `-m live`"]
+# Live and integration tests are opt-in: `uv run pytest -m live` (or
+# `-m integration`) overrides this -m.
+addopts = ["-ra", "--strict-markers", "-m", "not live and not integration"]
+markers = [
+    "live: calls real job-source endpoints; opt in with `-m live`",
+    "integration: needs real infrastructure (DuckDB and its sqlite extension) but calls no job source; opt in with `-m integration`",
+]
