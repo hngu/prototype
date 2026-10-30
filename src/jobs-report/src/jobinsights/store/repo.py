@@ -11,6 +11,7 @@ import sqlite3
 import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from enum import StrEnum
 from typing import Any, Literal
 
 from jobinsights.descriptions import compress, description_hash, html_to_text, normalize_text
@@ -316,3 +317,81 @@ def _record_version(
         (posting_id, day, *content),
     )
     return True
+
+
+# --- spans (PLAN.md §5.3) -----------------------------------------------------
+#
+# The per-posting state machine. Reconcile (Milestone 2) decides when to call
+# these: only for snapshot boards whose fetch succeeded this run, and not at
+# all when a board suspiciously drops to 0 postings. A posting closes after 2
+# absences on different run_dates; settings.yaml `reconcile.absences_to_close`
+# documents that number, and pending_absent_date can only count to 2.
+
+
+class SpanEvent(StrEnum):
+    OPENED = "opened"  # first span for this posting
+    REOPENED = "reopened"  # new span after a closed one: a repost
+    SEEN = "seen"  # open span confirmed; any pending absence cleared
+    PENDING = "pending"  # first absence recorded, awaiting confirmation
+    CLOSED = "closed"  # second absence on a later run_date closed the span
+    UNCHANGED = "unchanged"  # same-day re-run, or absent with no open span
+
+
+def _open_span(conn: sqlite3.Connection, posting_id: int) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT open_date, pending_absent_date FROM posting_spans "
+        "WHERE posting_id = ? AND close_date IS NULL",
+        (posting_id,),
+    ).fetchone()
+
+
+def mark_present(conn: sqlite3.Connection, posting_id: int, run_date: date) -> SpanEvent:
+    """Record that a successful fetch on `run_date` included the posting."""
+    span = _open_span(conn, posting_id)
+    if span is not None:
+        if span["pending_absent_date"] is not None:
+            conn.execute(
+                "UPDATE posting_spans SET pending_absent_date = NULL "
+                "WHERE posting_id = ? AND open_date = ?",
+                (posting_id, span["open_date"]),
+            )
+        return SpanEvent.SEEN
+
+    had_spans = conn.execute(
+        "SELECT 1 FROM posting_spans WHERE posting_id = ? LIMIT 1", (posting_id,)
+    ).fetchone()
+    conn.execute(
+        "INSERT INTO posting_spans (posting_id, open_date) VALUES (?, ?)",
+        (posting_id, run_date.isoformat()),
+    )
+    return SpanEvent.REOPENED if had_spans else SpanEvent.OPENED
+
+
+def mark_absent(conn: sqlite3.Connection, posting_id: int, run_date: date) -> SpanEvent:
+    """Record that a successful fetch on `run_date` did not include the posting.
+
+    The first absence is only pending. A second absence on a later run_date
+    closes the span as of the first absent date. A same-day re-run never
+    confirms a closure.
+    """
+    span = _open_span(conn, posting_id)
+    if span is None:
+        return SpanEvent.UNCHANGED
+
+    day = run_date.isoformat()
+    pending = span["pending_absent_date"]
+    if pending is None:
+        conn.execute(
+            "UPDATE posting_spans SET pending_absent_date = ? "
+            "WHERE posting_id = ? AND open_date = ?",
+            (day, posting_id, span["open_date"]),
+        )
+        return SpanEvent.PENDING
+    if day > pending:
+        conn.execute(
+            "UPDATE posting_spans SET close_date = pending_absent_date, pending_absent_date = NULL "
+            "WHERE posting_id = ? AND open_date = ?",
+            (posting_id, span["open_date"]),
+        )
+        return SpanEvent.CLOSED
+    return SpanEvent.UNCHANGED
