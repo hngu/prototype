@@ -398,29 +398,29 @@ Target runtime: under 30 minutes at a few thousand boards.
 **Acceptance criteria:** `uv run jobs --help` works; `uv run pytest` passes; ruff is clean.
 
 ### Milestone 1 — Storage layer
-- [ ] Migration runner plus `001_initial.sql` (§5.2)
-- [ ] Repo functions:
+- [x] Migration runner plus `001_initial.sql` (§5.2)
+- [x] Repo functions:
   - start and finish a run, record a fetch
   - upsert company and board
   - upsert a posting along with its description and a version-on-change
   - span operations
-- [ ] Description handling: HTML → plain text, sha256, zlib
-- [ ] Raw archive (§5.4): `data/archive.sqlite` with its own migrations, plus functions to:
+- [x] Description handling: HTML → plain text, sha256, zlib
+- [x] Raw archive (§5.4): `data/archive.sqlite` with its own migrations, plus functions to:
   - write a manifest and its objects
   - read a fetch back as items + envelope
   - prune by retention
-- [ ] `jobs db build-duckdb`: `INSTALL sqlite; LOAD sqlite; ATTACH 'data/jobs.sqlite' AS src (TYPE sqlite)`, then:
+- [x] `jobs db build-duckdb`: `INSTALL sqlite; LOAD sqlite; ATTACH 'data/jobs.sqlite' AS src (TYPE sqlite)`, then:
   - copy the tables
   - decompress descriptions into a text column
   - create views: `v_open_postings_by_day`, `v_new_postings_by_day`
-- [ ] `jobs db export`: one Parquet file per table in `data/exports/`
+- [x] `jobs db export`: one Parquet file per table in `data/exports/`
 
 **Acceptance criteria:**
 - Tests cover upsert idempotency, version-on-change only, and span open/pending/close/reopen.
 - Archive tests:
   - writing the same item twice stores one object and updates its `last_referenced_date`
   - pruning removes expired manifests but keeps any object still referenced inside the window
-- DuckDB row counts match SQLite.
+- DuckDB row counts match SQLite (an `integration` test: `uv run pytest -m integration`).
 
 ### Milestone 2 — Shared HTTP client, company job-board adapters, reconcile (the core)
 - [ ] `http.py` with:

@@ -15,7 +15,7 @@ The repo is public and meant to be shown off, so clean code, tests and a clear R
 
 - Python 3.12, managed with `uv`
 - `httpx` (async) for HTTP, `pydantic` v2 for models, `typer` for the CLI (`jobs`)
-- `sqlite3` (stdlib) for the system of record, `duckdb` for analytics
+- `sqlite3` (stdlib) for the system of record, `duckdb` for analytics (plus `numpy`, which DuckDB's Python UDFs require)
 - `pytest` + `respx` for tests, `ruff` for lint and format
 - `PyYAML` for config, `python-dotenv` for secrets
 - `selectolax` for HTML → plain text
@@ -28,10 +28,15 @@ Ask before adding any other dependency.
 Keep this list current as commands are added.
 
 - `uv run jobs --help`
+- `uv run jobs db init`: create `data/` and both databases, applying all migrations
+- `uv run jobs db migrate`: apply pending migrations to both databases
+- `uv run jobs db build-duckdb`: rebuild `data/jobs.duckdb` from SQLite
+- `uv run jobs db export`: write one Parquet file per table to `data/exports/`
 - `uv run jobs daily`: the full daily pipeline
 - `uv run jobs reprocess --from YYYY-MM-DD --to YYYY-MM-DD`: re-parse archived data with the current parsers. It's a dry run that prints a diff by default; add `--apply` to write.
 - `uv run pytest`: unit tests, no network
 - `uv run pytest -m live`: opt-in live smoke tests (the default pytest config deselects `live`; passing `-m live` overrides it)
+- `uv run pytest -m integration`: opt-in tests that need real infrastructure but call no job source (DuckDB and its sqlite extension, downloaded once to `~/.duckdb`)
 - `uv run ruff check . && uv run ruff format .`
 
 ## Hard rules
@@ -48,7 +53,7 @@ Keep this list current as commands are added.
    - a User-Agent that includes the contact email from `.env`
 
    Respect each source's stated limits (for example, Remotive: at most 4 fetches a day).
-5. **No live network calls in unit tests.** Use recorded, trimmed fixtures in `tests/fixtures/<source>/`. Live checks are marked `@pytest.mark.live` and skipped by default.
+5. **No live network calls in unit tests.** Use recorded, trimmed fixtures in `tests/fixtures/<source>/`. Live checks are marked `@pytest.mark.live` and skipped by default. Tests that need real infrastructure but no job source (DuckDB) are marked `@pytest.mark.integration`, live in `tests/integration/`, and are skipped by default too; don't stub that infrastructure.
 6. **Two write targets, in this order.** For every fetch, successful or not:
    1. write the raw archive entry (`data/archive.sqlite`, PLAN.md §5.4)
    2. then parse into SQLite (`data/jobs.sqlite`)

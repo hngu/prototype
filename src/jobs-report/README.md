@@ -10,8 +10,9 @@ open?" can be answered later.
 - **Phase 2 (later):** normalizing titles, seniority, locations, technologies and pay, then
   answering the question bank in [PLAN.md](PLAN.md#9-phase-2-question-bank).
 
-**Status:** Milestone 0, scaffold. The CLI commands exist but are stubs. See [PLAN.md](PLAN.md)
-for the roadmap.
+**Status:** Milestone 1, storage layer, is done: both databases, the raw archive, and the
+DuckDB and Parquet builds work. Collection starts in Milestone 2. See [PLAN.md](PLAN.md) for the
+roadmap.
 
 ## How it works
 
@@ -51,17 +52,36 @@ Requires [uv](https://docs.astral.sh/uv/) (pinned in the monorepo's `.tool-versi
 uv sync                    # create .venv and install dependencies
 cp .env.example .env       # then set CONTACT_EMAIL (and API keys as sources are enabled)
 uv run jobs --help         # list commands
+uv run jobs db init        # create data/ and both databases
 ```
 
 Development:
 
 ```sh
-uv run pytest              # unit tests, no network
-uv run pytest -m live      # opt-in live smoke tests
+uv run pytest                   # unit tests, no network
+uv run pytest -m integration    # opt-in: real DuckDB (see below)
+uv run pytest -m live           # opt-in: calls the real job-source APIs
 uv run ruff check . && uv run ruff format .
 ```
+
+Unit tests never touch the network. The two opt-in suites are kept separate so the default run
+stays fast and offline:
+
+- **`integration`** needs real infrastructure but calls no job source. Today that's DuckDB:
+  the first run downloads DuckDB's sqlite extension once and caches it in `~/.duckdb`.
+- **`live`** calls the real job-source APIs.
 
 ## Data
 
 Everything under `data/` is local and gitignored. The raw archive holds full job descriptions
 and is never published.
+
+| File | What it holds |
+|---|---|
+| `data/jobs.sqlite` | The system of record: runs, fetches, companies, boards, postings, their open spans and change history, and deduplicated compressed descriptions |
+| `data/archive.sqlite` | Raw API responses for the last 90 days: each job object stored once per content hash, plus a manifest per fetch |
+| `data/jobs.duckdb` | An analysis copy rebuilt from SQLite (`jobs db build-duckdb`), with plain-text descriptions and the views `v_open_postings_by_day` and `v_new_postings_by_day` |
+| `data/exports/*.parquet` | One Parquet file per table (`jobs db export`) |
+
+Schema changes go through numbered migrations in `src/jobinsights/store/migrations/`, run by
+`jobs db migrate`.
