@@ -4,8 +4,8 @@ A collection has three phases:
 
 1. Fetch every board that has no good response today, and archive each response.
 2. Retry only the failed boards, with waits between rounds.
-3. Parse the saved responses from the archive, then upsert and reconcile, in one
-   transaction per board.
+3. Parse the saved responses from the archive, keep the software-engineering jobs,
+   then upsert and reconcile, in one transaction per board.
 
 Nothing is parsed until fetching ends, so the day is processed as one run. Running
 it again the same day continues that run: boards with a good response aren't

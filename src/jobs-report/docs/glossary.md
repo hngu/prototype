@@ -74,7 +74,8 @@ of calling the network. Recorded with `scripts/record_fixtures.py`.
 ### Hold
 
 Not applying closures to a board this time, because the data looks wrong. Example: a board with 100
-open jobs suddenly returns 0, which is more likely an API glitch than 100 jobs ending overnight. See
+open jobs suddenly returns no jobs at all, which is more likely an API glitch than every job ending
+overnight. See
 [zero-job run](#zero-job-run).
 
 ### Item
@@ -114,7 +115,7 @@ the job is seen again the mark is cleared, and if it's missing on a later day to
 ### Posting
 
 One job as we store it: a row in the `postings` table, identified by its [source](#source) and that
-source's id for the job.
+source's id for the job. Only jobs matching the [role filter](#role-filter) become postings.
 
 ### Posting version
 
@@ -191,7 +192,7 @@ Insert a row, or update it if it already exists. Upserting the same job twice le
 
 ### Zero-job run
 
-A successful fetch where a board returned no jobs. For a board with more than 20 open jobs, the first
-2 such days are [held](#hold). On the 3rd the drop is believed, and the jobs close, dated to the first
+A successful fetch where a board returned no jobs at all. For a board with more than 8 open stored
+jobs, the first 2 such days are [held](#hold). On the 3rd the drop is believed, and the jobs close, dated to the first
 zero day. Example: Monday 0 (held), Tuesday 0 (held), Wednesday 0 → they close with a `close_date` of
 Monday.

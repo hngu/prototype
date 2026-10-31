@@ -34,7 +34,7 @@ collect:
   retry_backoff_seconds: 30
 
 caps:
-  # Greenhouse single-job requests for pay ranges, new postings only.
+  # Greenhouse single-job requests for pay ranges, per day, newest postings first.
   greenhouse_pay_enrichment_per_run: 200
   # Candidate boards probed by discovery in one run.
   discovery_validations_per_run: 200

@@ -8,7 +8,7 @@
 
 ## 1. Goal and scope
 
-Build a free, reliable pipeline that collects software-engineering job postings **every day**, keeps their history, and stores it in SQLite, with DuckDB and Parquet copies for analysis.
+Build a free, reliable pipeline that collects software-engineering job postings **every day**, keeps their history, and stores it in SQLite, with DuckDB and Parquet copies for analysis. Sources return every role a company has, so a title filter decides what's stored: the archive keeps all jobs for 90 days, and SQLite keeps software engineering only.
 
 The end product is a public project that:
 1. answers our own questions about the job market, and
@@ -32,6 +32,7 @@ Phase 1 stores everything those later phases need.
 | Decision | Choice | Why |
 |---|---|---|
 | Storage | **Two write targets:** the raw archive (`data/archive.sqlite`, what each source returned) and SQLite (`data/jobs.sqlite`, the parsed system of record). DuckDB and Parquet are rebuilt from SQLite after every run. | One write path for parsed data means the analysis copies can never drift from SQLite. SQLite handles row-level upserts well; DuckDB is fast for the aggregations Phase 2 needs. DuckDB reads SQLite directly via `ATTACH ... (TYPE sqlite)`. |
+| Scope | **Only software-engineering roles are stored in SQLite**, decided by a strict title filter (`role_filter.py`). Every job is still archived. | Keeps the system of record focused on what we want to analyze. Missing some real software roles is accepted. The cost: non-engineering history is gone after 90 days, and so is any job the filter wrongly dropped. |
 | Backbone sources | Company job-board APIs: Greenhouse, Lever, Ashby (more later) | Free, official and complete per company, with full descriptions. One request returns a whole board. |
 | Breadth and discovery | Free feeds: Adzuna, The Muse, Remotive, Remote OK, USAJOBS, HN "Who is hiring?" | Wider coverage. Their apply links reveal new companies whose job boards we can then track directly. |
 | Snapshot vs. feed | Each source declares whether one fetch returns a company's complete board (`snapshot=True`) or a partial list (`snapshot=False`). | Closed jobs can only be inferred from complete snapshots. For feeds, a job missing from today's results tells us nothing. |
@@ -110,6 +111,7 @@ job-insights/
 │   │   └── adzuna.py  themuse.py  remotive.py  remoteok.py  usajobs.py  hn.py
 │   ├── discovery.py             # URL → (ats, region, slug), validation
 │   ├── archive.py               # write, read and prune the raw archive (§5.4)
+│   ├── role_filter.py           # which titles count as software engineering
 │   ├── reconcile.py             # spans, versions, closures
 │   ├── reprocess.py             # re-parse archived data with current parsers (§5.4)
 │   ├── pipeline.py              # `jobs daily` orchestration
@@ -292,7 +294,7 @@ CREATE TABLE quota_usage (
 
 ### 5.3 Reconcile rules (snapshot sources only)
 
-For each board whose fetch **succeeded** this run:
+For each board whose fetch **succeeded** this run. "Open" here means stored postings, which are software engineering only:
 
 | Case | Action |
 |---|---|
@@ -300,13 +302,19 @@ For each board whose fetch **succeeded** this run:
 | Posting seen, open span | Update `last_seen_date` and clear `pending_absent_date`. |
 | Posting absent, `pending_absent_date` is NULL | Set `pending_absent_date = run_date`. |
 | Posting absent, `pending_absent_date` already set from an earlier successful fetch | Close the span (`close_date = pending_absent_date`). |
-| Board returns 0 jobs but has more than 20 open: 1st or 2nd zero-job run | **Hold:** record it and flag it in health checks, but **don't** apply closures this run. |
-| Board returns 0 jobs but has more than 20 open: 3rd zero-job run | Believe it: close them all, with `close_date` = the first zero-job date (or a posting's own earlier pending date). |
+| Board returns no jobs at all but has more than 8 open: 1st or 2nd zero-job run | **Hold:** record it and flag it in health checks, but **don't** apply closures this run. |
+| Board returns no jobs at all but has more than 8 open: 3rd zero-job run | Believe it: close them all, with `close_date` = the first zero-job date (or a posting's own earlier pending date). |
 | Response has jobs that failed to parse | Upsert the good ones and mark them seen, but mark nothing absent: a missing posting might be one of the bad ones. The fetch has `ok = 0`, while its manifest stays `ok = 1` so a fixed parser can replay it. |
 
 If the board's fetch **failed**, touch nothing.
 
-Zero-job runs are counted by distinct `run_date`. A failed fetch neither adds to the count nor resets it, and any response with jobs resets it, even if they failed to parse.
+Zero-job runs are counted by distinct `run_date`. A failed fetch neither adds to the count nor resets it, and any response with jobs resets it, even if they failed to parse or none are software engineering.
+
+The role filter sets which jobs these rules apply to:
+- A job not yet stored is stored only if its title matches. One that doesn't match is archived and otherwise ignored, with no posting, span or pay lookup.
+- **Once stored, a job stays tracked**, whatever its title becomes. Otherwise a retitle ("Software Engineer" to "Solutions Consultant") would look like a closure.
+- A job retitled into scope is stored from that day, as a new posting. `posted_at` still shows its real age.
+- A response whose jobs are all out of scope isn't a hold: the API is clearly working, so stored postings missing from it close as usual.
 
 The confirming absence must come from a **later `run_date`**. A same-day re-run (`--force`) never confirms a closure.
 
@@ -365,6 +373,7 @@ CREATE INDEX manifests_run_date ON manifests (run_date);
 |---|---|---|
 | Phase 2 normalization, DuckDB views, metric tables | Rebuild from SQLite (happens every run) | Full history |
 | Parser fix or a newly extracted field | `jobs reprocess --from --to` re-parses archived items with the current parsers. For each posting in the window, it re-parses the latest archived item and updates the posting's fields, `parser_version` and `posting_versions` rows within the window. | Last 90 days. Postings last seen before the window keep their old values; new columns stay NULL for them. |
+| Role filter change | `jobs reprocess --from --to` with the new `ROLE_FILTER_VERSION` adds jobs that now match, from the archive. Postings already stored stay, as with any retitle. | Last 90 days. A job that closed or was dropped before the window can't be recovered. |
 | Presence or closure logic | `jobs reprocess --rebuild-spans` replays the manifests day by day, starting from the span state at the window's start | Last 90 days |
 
 `jobs reprocess`:
@@ -380,7 +389,7 @@ CREATE INDEX manifests_run_date ON manifests (run_date);
 2. **Feeds:** fetch each enabled feed, archive each response (§5.4), then upsert postings. Quota guards apply.
 3. **Discovery:** extract ATS URLs from today's feed postings and new HN comments, then validate candidates (§7, Milestone 3).
 4. **Boards:** fetch every `active` board (including newly validated ones) with per-host concurrency limits, archiving each response. Retry only the failed ones (`collect.retries` rounds, with growing waits); 429, 5xx, network errors and malformed responses are retried, other 4xx aren't. Boards still failing are logged, and the rest carry on.
-5. **Process and reconcile:** parse the saved responses from the archive, then apply the spans and versions rules (§5.3), in one transaction per board.
+5. **Process and reconcile:** parse the saved responses from the archive, apply the role filter, then apply the spans and versions rules (§5.3), in one transaction per board.
 6. **Greenhouse pay enrichment:** request detail with `pay_transparency=true` for open Greenhouse postings with no successful lookup yet, newest first, up to a daily cap. A posting tried today waits until tomorrow. Failures here don't affect the run's status. Detail responses are archived too.
 7. **Build:** rebuild `jobs.duckdb` from SQLite and write Parquet exports.
 8. **Health:** run the checks (§8) and write `data/reports/run-{date}.md` and `status/latest.json`.
@@ -439,8 +448,9 @@ Target runtime: under 30 minutes at a few thousand boards.
   - retries with backoff and jitter on 429/5xx, honoring `Retry-After`
   - a User-Agent that includes `CONTACT_EMAIL`
 - [x] Adapters `greenhouse`, `lever`, `ashby`, with fixtures recorded from 2–3 real boards each. Each one splits responses into items + envelope, parses from items alone and declares `PARSER_VERSION` (§5.1).
-- [ ] `config/seeds.yaml`: 30–50 companies spread across the three systems, each verified live (a mix of big tech, scale-ups and AI startups)
+- [x] `config/seeds.yaml`: 30–50 companies spread across the three systems, each verified live (a mix of big tech, scale-ups and AI startups)
 - [x] `reconcile.py` implementing §5.3
+- [x] Role filter: only software-engineering titles are stored in SQLite, and every job is still archived
 - [x] Greenhouse pay enrichment (capped)
 - [x] `jobs collect --source greenhouse|lever|ashby|boards`, which archives every response before parsing, retries failed boards and processes the day as one run
 
@@ -450,6 +460,7 @@ Target runtime: under 30 minutes at a few thousand boards.
 - A failed board is retried, then processed with the rest. Boards that succeeded aren't fetched again.
 - After the configured retries, failures are logged and the rest are processed.
 - A later collection the same day picks up only what failed.
+- Out-of-scope jobs are archived but not stored. A job retitled out of scope stays tracked and doesn't close.
 - A job missing from 2 successful fetches closes, with the right `close_date`.
 - A job that returns gets a new span.
 - A parser that raises on one item still leaves that fetch's manifest and objects in the archive.
@@ -489,6 +500,7 @@ Target runtime: under 30 minutes at a few thousand boards.
 - [ ] `usajobs`: series 2210
 - [ ] `hn`: find this month's thread and add new top-level comments to `hn_comments`. Also refresh last month's thread during the first 3 days of a month.
 - [ ] Every feed passes its URLs (and HN comment text) to discovery
+- [ ] Feed postings go through the role filter too. Confirm this when building each feed, since its terms and categories may differ. Raw `hn_comments` aren't postings, so they aren't filtered.
 
 **Acceptance criteria:**
 - Each source has fixture tests.
@@ -501,7 +513,7 @@ Target runtime: under 30 minutes at a few thousand boards.
 - [ ] Run report in Markdown plus `status/latest.json` (date, status, counts per source, new/closed postings, active boards, quota use)
 - [ ] Health checks (§8)
 - [ ] Archive retention (90 days, weekly `VACUUM`) and `jobs.sqlite` backups (7 days)
-- [ ] `jobs reprocess --from --to [--rebuild-spans] [--apply]` (§5.4), plus the weekly self-check
+- [ ] `jobs reprocess --from --to [--rebuild-spans] [--apply]` (§5.4), including role filter changes, plus the weekly self-check
 - [ ] Exit codes as in §6
 
 **Acceptance criteria:**
@@ -532,7 +544,7 @@ Target runtime: under 30 minutes at a few thousand boards.
   - sources and attribution
   - data dictionary
   - how to reproduce
-  - "what this data can and can't tell you" (sample bias toward tech companies and startups)
+  - "what this data can and can't tell you" (sample bias toward tech companies and startups; software engineering only, with some real roles missed by the title filter)
 - [ ] Review the question bank (§9) and mark each question supported, needs Phase 2, or not feasible
 
 ---
@@ -541,7 +553,8 @@ Target runtime: under 30 minutes at a few thousand boards.
 
 - **Item count per source:** warn when it falls below 50% of the trailing 7-run median.
 - **Board failures:** list boards with `consecutive_failures >= 3`. Mark a board `inactive` after 7 consecutive 404s; a board with zero jobs stays active.
-- **Suspicious drops:** flag any board that went from more than 20 open postings to 0 (closures are held until its 3rd zero-job run).
+- **Suspicious drops:** flag any board with more than 8 open postings that returned no jobs at all (closures are held until its 3rd zero-job run).
+- **Role filter:** share of jobs skipped per board. A board whose stored share suddenly falls may have changed how it writes titles.
 - **Closures:** flag runs where closures exceed 30% of a board's open postings.
 - **Parse errors:** count of records that failed `PostingRecord` validation, per source.
 - **Quotas:** usage vs. budget per source.
@@ -556,25 +569,26 @@ Target runtime: under 30 minutes at a few thousand boards.
 
 Phase 1 must capture the fields in the **Needs** column. The **Phase 2 work** column lists what has to be built later.
 
+Only software-engineering roles are stored (§2), so every answer describes engineering hiring, not a company's hiring overall.
+
 | # | Question | Definition | Needs from Phase 1 | Phase 2 work |
 |---|---|---|---|---|
-| 1 | Who is hiring the most? | New postings per company (day/week/month) **and** open postings per company; engineering roles and all roles | postings, spans, companies, title, department_raw | Engineering-role classifier |
-| 2 | Who is ramping up or slowing down? | Week-over-week and month-over-month change in open postings, **fixed company panel only** | spans, boards.first_tracked_date | Panel cohorts |
-| 3 | Who went quiet? | Companies whose open roles dropped to 0 or fell by more than 50% | spans | — |
-| 4 | How does engineering compare to other functions per company? | Engineering share of a company's openings | department_raw, title | Department normalization |
-| 5 | Most common roles | Counts by normalized title and role family (backend, frontend, mobile, infra/platform, data, ML/AI, product engineer, …) | title | Title normalization |
-| 6 | Trending and emerging titles | Fastest-growing share of new postings month over month (with a minimum count); titles first seen this period (e.g., "AI engineer," "product engineer," "forward deployed engineer") | title, first_seen_date | Title normalization |
-| 7 | Seniority mix | Share of junior, mid, senior, staff+ and manager postings; junior share as a read on the entry-level market | title, extra_json (Muse levels, USAJOBS grade) | Seniority classifier |
-| 8 | Most requested technologies | Share of postings mentioning each language, framework, cloud or database (counted once per posting) | descriptions | Technology dictionary with aliases |
-| 9 | Rising and falling technologies | Month-over-month change in share | descriptions, first_seen_date | Same |
-| 10 | AI in non-AI roles | Share of backend, frontend and product roles mentioning LLMs or AI tooling | descriptions, title | Role family + technology dictionary |
-| 11 | Technology co-occurrence and company stacks | Pairs that appear together; top technologies per company | descriptions | Same |
-| 12 | Where are the jobs? | Top metros and countries; remote vs. hybrid vs. onsite share; remote with region limits | locations_raw, workplace_raw | Location parser |
-| 13 | What does it pay? | Share of postings with disclosed pay; ranges by role family, seniority and metro | salary_* fields, salary_raw, descriptions | Salary text parser (also fills gaps where a Greenhouse lookup found no range; descriptions are kept, so it can run over all history), currency/period normalization. Sales "salaries" can include commission. A pay lookup made after a posting's first day looks like a pay change on that date, so ignore a posting's first pay value when measuring changes. |
-| 14 | Market churn | New vs. closed postings per day; net change | spans | — |
-| 15 | How long do roles stay open? | Median days open by role and company; repost rate; roles open unusually long ("ghost" candidates) | spans | — |
-| 16 | Visa sponsorship | Share of postings mentioning sponsorship, positively or negatively | descriptions | Phrase rules |
-| 17 | Data coverage | Postings by source; unique contribution of each source; duplicate rate; panel growth | postings, ats_ref, boards | Cross-source dedupe |
+| 1 | Who is hiring the most engineers? | New postings per company (day/week/month) **and** open postings per company; engineering roles only (all-roles counts aren't stored) | postings, spans, companies, title, department_raw | Better engineering-role classifier, if the Phase 1 title filter proves too rough |
+| 2 | Who is ramping up or slowing down in engineering? | Week-over-week and month-over-month change in open postings, **fixed company panel only** | spans, boards.first_tracked_date | Panel cohorts |
+| 3 | Who went quiet in engineering? | Companies whose open engineering roles dropped to 0 or fell by more than 50% | spans | — |
+| 4 | Most common roles | Counts by normalized title and role family (backend, frontend, mobile, infra/platform, data, ML/AI, product engineer, …) | title | Title normalization |
+| 5 | Trending and emerging titles | Fastest-growing share of new postings month over month (with a minimum count); titles first seen this period (e.g., "AI engineer," "product engineer," "forward deployed engineer") | title, first_seen_date | Title normalization |
+| 6 | Seniority mix | Share of junior, mid, senior, staff+ and manager postings; junior share as a read on the entry-level market | title, extra_json (Muse levels, USAJOBS grade) | Seniority classifier |
+| 7 | Most requested technologies | Share of postings mentioning each language, framework, cloud or database (counted once per posting) | descriptions | Technology dictionary with aliases |
+| 8 | Rising and falling technologies | Month-over-month change in share | descriptions, first_seen_date | Same |
+| 9 | AI in non-AI roles | Share of backend, frontend and product roles mentioning LLMs or AI tooling | descriptions, title | Role family + technology dictionary |
+| 10 | Technology co-occurrence and company stacks | Pairs that appear together; top technologies per company | descriptions | Same |
+| 11 | Where are the jobs? | Top metros and countries; remote vs. hybrid vs. onsite share; remote with region limits | locations_raw, workplace_raw | Location parser |
+| 12 | What does it pay? | Share of postings with disclosed pay; ranges by role family, seniority and metro | salary_* fields, salary_raw, descriptions | Salary text parser (also fills gaps where a Greenhouse lookup found no range; stored descriptions are kept, so it can run over all stored history), currency/period normalization. Sales "salaries" can include commission. A pay lookup made after a posting's first day looks like a pay change on that date, so ignore a posting's first pay value when measuring changes. |
+| 13 | Market churn | New vs. closed postings per day; net change | spans | — |
+| 14 | How long do roles stay open? | Median days open by role and company; repost rate; roles open unusually long ("ghost" candidates) | spans | — |
+| 15 | Visa sponsorship | Share of postings mentioning sponsorship, positively or negatively | descriptions | Phrase rules |
+| 16 | Data coverage | Postings by source; unique contribution of each source; duplicate rate; panel growth | postings, ats_ref, boards | Cross-source dedupe |
 
 ---
 

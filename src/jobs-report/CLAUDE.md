@@ -2,7 +2,7 @@
 
 ## What this project is
 
-A daily collector of software-engineering job postings from **free, official sources**: company job-board APIs (Greenhouse, Lever, Ashby, …) plus a few public aggregators and feeds. Every response is first saved to a **raw archive** (`data/archive.sqlite`, last 90 days), then parsed into **SQLite** (`data/jobs.sqlite`, the system of record). A **DuckDB** copy plus Parquet exports are rebuilt from SQLite for analysis.
+A daily collector of software-engineering job postings from **free, official sources**: company job-board APIs (Greenhouse, Lever, Ashby, …) plus a few public aggregators and feeds. Every response is first saved to a **raw archive** (`data/archive.sqlite`, last 90 days), then parsed into **SQLite** (`data/jobs.sqlite`, the system of record), which stores only software-engineering roles. A **DuckDB** copy plus Parquet exports are rebuilt from SQLite for analysis.
 
 - **Phase 1 (now):** reliable daily collection and storage.
 - **Phase 2 (later):** normalization and the question bank at the bottom of PLAN.md.
@@ -64,6 +64,7 @@ Keep this list current as commands are added.
 
    DuckDB, Parquet and reports are derived from SQLite; collectors never write to them.
 7. **Store raw, derive later.** Keep fields as the source gave them (`*_raw` columns). Normalizing titles, seniority, locations and technologies is Phase 2; don't put it in collectors.
+   - **One exception:** the role filter (`src/jobinsights/role_filter.py`) decides from a job's title whether it's stored in SQLite at all. It stays strict, since missing a real software role is acceptable, and it's a pure function, so it can be re-run from the archive. The archive keeps every job. Bump `ROLE_FILTER_VERSION` whenever its answer changes. Once a job is stored, it stays tracked whatever its title becomes, so a retitle can't look like a closure.
    - Parsing must be a pure function of an archived item, its envelope and its board, so it can be re-run from the archive alone.
    - Bump an adapter's `PARSER_VERSION` whenever its output changes. Fix parser bugs with `jobs reprocess`, never with ad-hoc SQL updates.
 8. **Idempotent runs.** A run is keyed by its UTC date. Re-running the same day must not duplicate rows or create false closures.

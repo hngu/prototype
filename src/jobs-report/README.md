@@ -1,7 +1,8 @@
 # Job Insights
 
 A daily collector of software-engineering job postings from free, official sources: company
-job-board APIs (Greenhouse, Lever, Ashby, …) plus a few public feeds. Company job boards only
+job-board APIs (Greenhouse, Lever, Ashby, …) plus a few public feeds. Company job-board APIs return
+every role, so a title filter keeps the software-engineering ones. Company job boards only
 show what is open today, so history can't be backfilled. This project records it, every day,
 so questions like "who is hiring?", "which technologies are rising?" and "how long do roles stay
 open?" can be answered later.
@@ -18,12 +19,29 @@ Greenhouse, Lever and Ashby, and keeps each posting's history. Scheduling it dai
 
 1. Every API response is saved first to a raw archive (`data/archive.sqlite`, last 90 days),
    so it can be re-parsed after a parser fix. Boards that fail are retried a few times.
-2. It's then parsed into SQLite (`data/jobs.sqlite`), the system of record, which keeps each
-   posting's open spans and change history. A posting closes only after it's missing from 2
+2. It's then parsed into SQLite (`data/jobs.sqlite`), the system of record, which stores only
+   software-engineering roles and keeps each posting's open spans and change history. A posting
+   closes only after it's missing from 2
    successful fetches on different days, so an outage can't look like closed jobs.
 3. A DuckDB database and Parquet exports are rebuilt from SQLite for analysis.
 
 New to the vocabulary (spans, manifests, snapshots)? See the [glossary](docs/glossary.md).
+
+### What counts as software engineering
+
+The filter in [`src/jobinsights/role_filter.py`](src/jobinsights/role_filter.py) looks at the title
+alone, and is strict on purpose.
+
+- **Kept:** software, backend, frontend, data, machine learning, security and site reliability
+  engineers, engineering managers, forward deployed engineers, Members of Technical Staff, and
+  interns in those roles.
+- **Dropped:** sales, solutions, support and customer engineers, hardware and manufacturing roles,
+  and anything without an engineering word in the title.
+
+So the data describes engineering hiring, not a company's hiring overall, and it misses some real
+software roles, such as a "Tech Lead" or a title in another language. About a third of the jobs on
+the current boards are kept. A job already stored stays tracked if its title changes later, so a
+few non-engineering titles can appear.
 
 ## Sources
 
@@ -86,8 +104,8 @@ and is never published.
 
 | File | What it holds |
 |---|---|
-| `data/jobs.sqlite` | The system of record: runs, fetches, companies, boards, postings, their open spans and change history, and deduplicated compressed descriptions |
-| `data/archive.sqlite` | Raw API responses for the last 90 days: each job object stored once per content hash, plus a manifest per fetch |
+| `data/jobs.sqlite` | The system of record: runs, fetches, companies, boards, software-engineering postings, their open spans and change history, and deduplicated compressed descriptions |
+| `data/archive.sqlite` | Raw API responses for the last 90 days, all roles included: each job object stored once per content hash, plus a manifest per fetch |
 | `data/jobs.duckdb` | An analysis copy rebuilt from SQLite (`jobs db build-duckdb`), with plain-text descriptions and the views `v_open_postings_by_day` and `v_new_postings_by_day` |
 | `data/exports/*.parquet` | One Parquet file per table (`jobs db export`) |
 
