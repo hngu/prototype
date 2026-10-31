@@ -24,6 +24,18 @@ from jobinsights.sources.base import BoardAdapter
 
 FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "fixtures"
 DESCRIPTION_CHARS = 1200
+LEVER_TEXT_FIELDS = (
+    "additional",
+    "additionalPlain",
+    "description",
+    "descriptionBody",
+    "descriptionBodyPlain",
+    "descriptionPlain",
+    "opening",
+    "openingPlain",
+    "salaryDescription",
+    "salaryDescriptionPlain",
+)
 
 
 def _trim_greenhouse(payload: dict[str, Any], jobs: int) -> dict[str, Any]:
@@ -33,11 +45,48 @@ def _trim_greenhouse(payload: dict[str, Any], jobs: int) -> dict[str, Any]:
     return {**payload, "jobs": kept, "meta": {**payload["meta"], "total": len(kept)}}
 
 
+def _trim_lever(payload: list[dict[str, Any]], jobs: int) -> list[dict[str, Any]]:
+    # Keep jobs with and without pay, so the fixtures cover both.
+    kept = _varied(payload, jobs, lambda job: bool(job.get("salaryRange")))
+    for job in kept:
+        for field in LEVER_TEXT_FIELDS:
+            if job.get(field):
+                job[field] = _shorten(job[field])
+        job["lists"] = job.get("lists", [])[:2]
+        for entry in job["lists"]:
+            entry["content"] = _shorten(entry["content"])
+    return kept
+
+
+def _trim_ashby(payload: dict[str, Any], jobs: int) -> dict[str, Any]:
+    # Keep jobs with no pay, one pay tier and several, so the fixtures cover all three.
+    kept = _varied(
+        payload["jobs"], jobs, lambda job: min(len(job["compensation"]["compensationTiers"]), 2)
+    )
+    for job in kept:
+        job["descriptionHtml"] = _shorten(job["descriptionHtml"])
+        job["descriptionPlain"] = _shorten(job["descriptionPlain"])
+    return {**payload, "jobs": kept}
+
+
+def _varied(jobs: list[Any], count: int, kind: Callable[[Any], Any]) -> list[Any]:
+    """The first job of each kind, then more jobs in order, up to `count`."""
+    firsts = {}
+    for job in jobs:
+        firsts.setdefault(kind(job), job)
+    picked = list(firsts.values())[:count]
+    return picked + [job for job in jobs if job not in picked][: count - len(picked)]
+
+
 def _shorten(text: str) -> str:
     return text[:DESCRIPTION_CHARS]
 
 
-TRIMMERS: dict[str, Callable[[Any, int], Any]] = {"greenhouse": _trim_greenhouse}
+TRIMMERS: dict[str, Callable[[Any, int], Any]] = {
+    "greenhouse": _trim_greenhouse,
+    "lever": _trim_lever,
+    "ashby": _trim_ashby,
+}
 
 
 def _check_in_full(adapter: BoardAdapter, payload: Any, board: BoardRef) -> None:

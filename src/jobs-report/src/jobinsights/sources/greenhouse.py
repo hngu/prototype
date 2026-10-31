@@ -12,7 +12,7 @@ from urllib.parse import quote
 from jobinsights.archive import ArchiveItem
 from jobinsights.config import SourceConfig
 from jobinsights.models import BoardRef, PostingRecord
-from jobinsights.sources.base import ResponseShapeError, Split, to_utc
+from jobinsights.sources.base import ResponseShapeError, Split, job_native_id, to_utc
 
 NAME = "greenhouse"
 SNAPSHOT = True
@@ -40,12 +40,12 @@ def split(payload: Any, board: BoardRef) -> Split:
         # A partial list would look like closures, so it must not count as a snapshot.
         raise ResponseShapeError(f"`meta.total` is {total!r} but the response has {len(jobs)} jobs")
     envelope = {key: value for key, value in payload.items() if key != "jobs"}
-    items = [ArchiveItem(native_id=_native_id(job, board), body=job) for job in jobs]
+    items = [ArchiveItem(native_id=job_native_id(job, board), body=job) for job in jobs]
     return Split(envelope=envelope, items=items)
 
 
 def parse(item: Any, envelope: Any, board: BoardRef) -> PostingRecord:
-    native_id = _native_id(item, board)
+    native_id = job_native_id(item, board)
     if native_id is None:
         raise ValueError("job has no `id`")
 
@@ -73,11 +73,6 @@ def parse(item: Any, envelope: Any, board: BoardRef) -> PostingRecord:
         source_updated_at=to_utc(item.get("updated_at")),
         extra={key: value for key, value in extra.items() if value},
     )
-
-
-def _native_id(job: Any, board: BoardRef) -> str | None:
-    job_id = job.get("id") if isinstance(job, dict) else None
-    return f"{board.slug}:{job_id}" if job_id is not None else None
 
 
 def _names(entries: Any) -> list[str]:

@@ -45,7 +45,7 @@ sources:
     hash_exclude: []
 
   lever:
-    enabled: false
+    enabled: true
     kind: board
     snapshot: true
     endpoint: https://api.lever.co/v0/postings/{slug}?mode=json
@@ -58,17 +58,21 @@ sources:
       `salaryRange` is an optional object with currency, interval, min, max.
       `workplaceType` is one of unspecified, on-site, remote, hybrid. "All job postings in
       the published state are publicly viewable." Only the application POST is rate-limited
-      (2/s); no limit stated for GET, no terms of use section.
+      (2/s); no limit stated for GET, no terms of use section. Live checks 2026-10-31: real
+      responses have `createdAt` (epoch milliseconds), `country` and salaryDescription, none
+      documented; workplaceType is "onsite", not the documented "on-site"; salaryDescription
+      doesn't repeat the salaryRange numbers. An unknown slug returns 404.
     doc_url: https://github.com/lever/postings-api
     verified_at: "2026-10-29"
     unverified:
       - Whether an unpaginated request always returns the whole board (no max `limit`
-        stated); check against a large board when writing the adapter.
-      - No `createdAt` field is documented, though responses may include it.
+        stated). Palantir (about 300 jobs) came back whole on 2026-10-30, with `skip` past
+        the end returning 0 and `limit=5000` returning the same count; recheck on the largest
+        seed board in Milestone 2.
     hash_exclude: []
 
   ashby:
-    enabled: false
+    enabled: true
     kind: board
     snapshot: true
     endpoint: https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true
@@ -80,12 +84,13 @@ sources:
       workplaceType (OnSite | Remote | Hybrid), employmentType (FullTime | PartTime |
       Intern | Contract | Temporary), descriptionHtml/Plain, jobUrl, applyUrl.
       Compensation is included when includeCompensation=true. No rate limits or terms stated.
+      Live checks 2026-10-31: compensation is under each job, as the field table says (the
+      docs' example is wrong). compensationTierSummary flattens several tiers into one range,
+      even across currencies, so salary_raw keeps each tier. All jobs were isListed=true on 9
+      boards; any unlisted ones are kept, with extra.is_listed. An unknown slug returns 404.
     doc_url: https://developers.ashbyhq.com/docs/public-job-posting-api
     verified_at: "2026-10-29"
-    unverified:
-      - The docs' field table puts compensation under each job, but the example shows it at
-        the top level; check a real response.
-      - Unlisted jobs (isListed=false) may appear; decide whether to keep them.
+    unverified: []
     hash_exclude: []
 
   workable:

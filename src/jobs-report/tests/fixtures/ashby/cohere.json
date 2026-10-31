@@ -1,0 +1,350 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "address": {
+        "postalAddress": {
+          "addressCountry": "Canada",
+          "addressLocality": "Toronto",
+          "addressRegion": "Ontario"
+        }
+      },
+      "applyUrl": "https://jobs.ashbyhq.com/cohere/7133d205-5421-4336-a8e2-6037b5f55073/application",
+      "compensation": {
+        "compensationTierSummary": "CA$215K – CA$295K • Offers Equity",
+        "compensationTiers": [
+          {
+            "additionalInformation": null,
+            "components": [
+              {
+                "compensationType": "Salary",
+                "currencyCode": "CAD",
+                "id": "61607966-395b-4ca1-892e-de9247bc96aa",
+                "interval": "1 YEAR",
+                "maxValue": 295000,
+                "minValue": 215000,
+                "summary": "Base Salary CA$215K – CA$295K"
+              },
+              {
+                "compensationType": "EquityPercentage",
+                "currencyCode": null,
+                "id": "c4cc7279-2bd6-4c94-8a98-0c98c903bed0",
+                "interval": "NONE",
+                "maxValue": null,
+                "minValue": null,
+                "summary": "Offers Equity"
+              }
+            ],
+            "id": "3cc19628-39b9-49e9-9282-fab895e322b1",
+            "tierSummary": "Base Salary CA$215K – CA$295K • Offers Equity",
+            "title": "Canada"
+          }
+        ],
+        "scrapeableCompensationSalarySummary": "CA$215K - CA$295K",
+        "summaryComponents": [
+          {
+            "compensationType": "Salary",
+            "currencyCode": "CAD",
+            "interval": "1 YEAR",
+            "maxValue": 295000,
+            "minValue": 215000
+          },
+          {
+            "compensationType": "EquityPercentage",
+            "currencyCode": null,
+            "interval": "NONE",
+            "maxValue": null,
+            "minValue": null
+          }
+        ]
+      },
+      "department": "Engineering & Infra",
+      "descriptionHtml": "<h2><strong>Who are we?</strong></h2><p style=\"min-height:1.5em\">Cohere is the leading security-first enterprise AI company.  We build cutting-edge foundation AI models and end-to-end products that are designed to solve real-world business problems.</p><p style=\"min-height:1.5em\">We’re training and deploying frontier models for enterprises who are building AI systems. We believe that our work is instrumental to the widespread adoption of AI and we are looking for folks that want to be part of that.</p><p style=\"min-height:1.5em\">We obsess over what we build. Each one of us is responsible for contributing to increasing the capabilities of our models and the value they drive for our customers. Cohere is a team of researchers, engineers, designers, and more, who are all passionate about their craft.</p><p style=\"min-height:1.5em\">We are a global technology company headquartered in Toronto with key offices in London, New York City, San Francisco, Montreal, Paris, Berlin and Seoul. Join us!</p><p style=\"min-height:1.5em\"></p><h2>Why this role?</h2><p style=\"min-height:1.5em\">This role is for people who love building tools for their coworkers. The Internal Applications team creates tools",
+      "descriptionPlain": "WHO ARE WE?\n\nCohere is the leading security-first enterprise AI company.  We build cutting-edge foundation AI models and end-to-end products that are designed to solve real-world business problems.\n\nWe’re training and deploying frontier models for enterprises who are building AI systems. We believe that our work is instrumental to the widespread adoption of AI and we are looking for folks that want to be part of that.\n\nWe obsess over what we build. Each one of us is responsible for contributing to increasing the capabilities of our models and the value they drive for our customers. Cohere is a team of researchers, engineers, designers, and more, who are all passionate about their craft.\n\nWe are a global technology company headquartered in Toronto with key offices in London, New York City, San Francisco, Montreal, Paris, Berlin and Seoul. Join us!\n\n\n\n\nWHY THIS ROLE?\n\nThis role is for people who love building tools for their coworkers. The Internal Applications team creates tools that help us create better models. In this role you will collaborate with internal stakeholders, which include annotators, ML researchers, product managers and more. Join our team of builders who create tool",
+      "employmentType": "FullTime",
+      "id": "7133d205-5421-4336-a8e2-6037b5f55073",
+      "isListed": true,
+      "isRemote": true,
+      "jobUrl": "https://jobs.ashbyhq.com/cohere/7133d205-5421-4336-a8e2-6037b5f55073",
+      "location": "Toronto",
+      "publishedAt": "2026-09-15T18:21:37.401+00:00",
+      "secondaryLocations": [
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "Canada"
+            }
+          },
+          "location": "Canada"
+        }
+      ],
+      "shouldDisplayCompensationOnJobPostings": true,
+      "team": "Internal Applications",
+      "title": "Senior Full-Stack Engineer, Internal Applications ",
+      "workplaceType": "Remote"
+    },
+    {
+      "address": {
+        "postalAddress": {
+          "addressCountry": "United Kingdom",
+          "addressLocality": "London",
+          "addressRegion": "London"
+        }
+      },
+      "applyUrl": "https://jobs.ashbyhq.com/cohere/3136a5a5-06fd-4c82-8b72-a43467e6b128/application",
+      "compensation": {
+        "compensationTierSummary": "CA$250K – CA$535K • Offers Equity • Multiple Ranges",
+        "compensationTiers": [
+          {
+            "additionalInformation": null,
+            "components": [
+              {
+                "compensationType": "Salary",
+                "currencyCode": "CAD",
+                "id": "e1664463-befc-483f-8d27-5a383f3175b2",
+                "interval": "1 YEAR",
+                "maxValue": 535000,
+                "minValue": 295000,
+                "summary": "Base Salary CA$295K – CA$535K"
+              },
+              {
+                "compensationType": "EquityPercentage",
+                "currencyCode": null,
+                "id": "f08feab7-c112-473f-a11a-ef2b3c9214d7",
+                "interval": "NONE",
+                "maxValue": null,
+                "minValue": null,
+                "summary": "Offers Equity"
+              }
+            ],
+            "id": "8a3cbd03-b280-43f3-ae5e-317d4dff2771",
+            "tierSummary": "Base Salary CA$295K – CA$535K • Offers Equity",
+            "title": "Canada - Toronto (GTA), Montreal"
+          },
+          {
+            "additionalInformation": null,
+            "components": [
+              {
+                "compensationType": "EquityPercentage",
+                "currencyCode": null,
+                "id": "6282ad0a-09f8-4c4c-b31f-96b2b6f8d6c4",
+                "interval": "NONE",
+                "maxValue": null,
+                "minValue": null,
+                "summary": "Offers Equity"
+              },
+              {
+                "compensationType": "Salary",
+                "currencyCode": "CAD",
+                "id": "9c45a31a-cf8f-400f-a570-02a16ee4e44c",
+                "interval": "1 YEAR",
+                "maxValue": 460000,
+                "minValue": 250000,
+                "summary": "Base Salary CA$250K – CA$460K"
+              }
+            ],
+            "id": "12fc2a9a-c6c6-4972-af59-7eecc4e03bb4",
+            "tierSummary": "Base Salary CA$250K – CA$460K • Offers Equity",
+            "title": "Canada"
+          },
+          {
+            "additionalInformation": null,
+            "components": [
+              {
+                "compensationType": "EquityPercentage",
+                "currencyCode": null,
+                "id": "4029b7d3-1bc7-42c0-8a72-3498733e1c2c",
+                "interval": "NONE",
+                "maxValue": null,
+                "minValue": null,
+                "summary": "Offers Equity"
+              },
+              {
+                "compensationType": "Salary",
+                "currencyCode": "USD",
+                "id": "78eb432f-5dbb-43c8-b031-08af0c9bbcd3",
+                "interval": "1 YEAR",
+                "maxValue": 380000,
+                "minValue": 205000,
+                "summary": "Base Salary $205K – $380K"
+              }
+            ],
+            "id": "08500dad-ba3e-4d55-ba70-9e7ad6943e0c",
+            "tierSummary": "Base Salary $205K – $380K • Offers Equity",
+            "title": "USA - California, New York and Washington"
+          },
+          {
+            "additionalInformation": null,
+            "components": [
+              {
+                "compensationType": "EquityPercentage",
+                "currencyCode": null,
+                "id": "72df3cc8-64c4-45b9-94b9-1660b62adb2b",
+                "interval": "NONE",
+                "maxValue": null,
+                "minValue": null,
+                "summary": "Offers Equity"
+              },
+              {
+                "compensationType": "Salary",
+                "currencyCode": "USD",
+                "id": "588cf37c-fd74-470a-8fd8-59f1bc91a8f9",
+                "interval": "1 YEAR",
+                "maxValue": 325000,
+                "minValue": 175000,
+                "summary": "Base Salary $175K – $325K"
+              }
+            ],
+            "id": "141e0f70-be43-4944-99e2-81ec56c84233",
+            "tierSummary": "Base Salary $175K – $325K • Offers Equity",
+            "title": "USA - All Other States"
+          }
+        ],
+        "scrapeableCompensationSalarySummary": "CA$250K - CA$535K",
+        "summaryComponents": [
+          {
+            "compensationType": "Salary",
+            "currencyCode": "CAD",
+            "interval": "1 YEAR",
+            "maxValue": 535000,
+            "minValue": 250000
+          },
+          {
+            "compensationType": "EquityPercentage",
+            "interval": "1 YEAR",
+            "maxValue": null,
+            "minValue": null
+          }
+        ]
+      },
+      "department": "Modeling",
+      "descriptionHtml": "<h2><strong>Who are we?</strong></h2><p style=\"min-height:1.5em\">Cohere is the leading security-first enterprise AI company.  We build cutting-edge foundation AI models and end-to-end products that are designed to solve real-world business problems.</p><p style=\"min-height:1.5em\">We’re training and deploying frontier models for enterprises who are building AI systems. We believe that our work is instrumental to the widespread adoption of AI and we are looking for folks that want to be part of that.</p><p style=\"min-height:1.5em\">We obsess over what we build. Each one of us is responsible for contributing to increasing the capabilities of our models and the value they drive for our customers. Cohere is a team of researchers, engineers, designers, and more, who are all passionate about their craft.</p><p style=\"min-height:1.5em\">We are a global technology company headquartered in Toronto with key offices in London, New York City, San Francisco, Montreal, Paris, Berlin and Seoul. Join us!</p><p style=\"min-height:1.5em\"><br /><strong>Please note that this is not a live role. We are grateful for your enthusiasm and interest in Cohere and encourage you to submit your resume for future co",
+      "descriptionPlain": "WHO ARE WE?\n\nCohere is the leading security-first enterprise AI company.  We build cutting-edge foundation AI models and end-to-end products that are designed to solve real-world business problems.\n\nWe’re training and deploying frontier models for enterprises who are building AI systems. We believe that our work is instrumental to the widespread adoption of AI and we are looking for folks that want to be part of that.\n\nWe obsess over what we build. Each one of us is responsible for contributing to increasing the capabilities of our models and the value they drive for our customers. Cohere is a team of researchers, engineers, designers, and more, who are all passionate about their craft.\n\nWe are a global technology company headquartered in Toronto with key offices in London, New York City, San Francisco, Montreal, Paris, Berlin and Seoul. Join us!\n\n\nPlease note that this is not a live role. We are grateful for your enthusiasm and interest in Cohere and encourage you to submit your resume for future consideration. Should a suitable position become available, we will review your application and reach out to discuss potential opportunities.\n\nRole Overview:\n\nDesign and implement novel r",
+      "employmentType": "FullTime",
+      "id": "3136a5a5-06fd-4c82-8b72-a43467e6b128",
+      "isListed": true,
+      "isRemote": true,
+      "jobUrl": "https://jobs.ashbyhq.com/cohere/3136a5a5-06fd-4c82-8b72-a43467e6b128",
+      "location": "London",
+      "publishedAt": "2024-11-01T16:06:43.318+00:00",
+      "secondaryLocations": [
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "United States",
+              "addressLocality": "San Francisco",
+              "addressRegion": "California"
+            }
+          },
+          "location": "San Francisco"
+        },
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "United States",
+              "addressLocality": "New York",
+              "addressRegion": "New York"
+            }
+          },
+          "location": "New York"
+        },
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "France",
+              "addressLocality": "Paris"
+            }
+          },
+          "location": "Paris"
+        },
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "Canada",
+              "addressLocality": "Toronto",
+              "addressRegion": "Ontario"
+            }
+          },
+          "location": "Toronto"
+        },
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "Canada",
+              "addressLocality": "Montreal",
+              "addressRegion": "Quebec "
+            }
+          },
+          "location": "Montreal"
+        }
+      ],
+      "shouldDisplayCompensationOnJobPostings": true,
+      "team": "Modeling",
+      "title": "Member of Technical Staff, Modeling",
+      "workplaceType": "Remote"
+    },
+    {
+      "address": {
+        "postalAddress": {}
+      },
+      "applyUrl": "https://jobs.ashbyhq.com/cohere/291e5dee-dcda-49e6-a1b6-dae0d48f80af/application",
+      "compensation": {
+        "compensationTierSummary": null,
+        "compensationTiers": [],
+        "scrapeableCompensationSalarySummary": null,
+        "summaryComponents": []
+      },
+      "department": "Engineering & Infra",
+      "descriptionHtml": "<h2><strong>Who are we?</strong></h2><p style=\"min-height:1.5em\">Cohere is the leading security-first enterprise AI company.  We build cutting-edge foundation AI models and end-to-end products that are designed to solve real-world business problems.</p><p style=\"min-height:1.5em\">We’re training and deploying frontier models for enterprises who are building AI systems. We believe that our work is instrumental to the widespread adoption of AI and we are looking for folks that want to be part of that.</p><p style=\"min-height:1.5em\">We obsess over what we build. Each one of us is responsible for contributing to increasing the capabilities of our models and the value they drive for our customers. Cohere is a team of researchers, engineers, designers, and more, who are all passionate about their craft.</p><p style=\"min-height:1.5em\">We are a global technology company headquartered in Toronto with key offices in London, New York City, San Francisco, Montreal, Paris, Berlin and Seoul. Join us!</p><h3><strong>About North:</strong></h3><p style=\"min-height:1.5em\"><a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"https://cohere.com/north\"><u>North</u></a> is Cohere's cutting-edge AI",
+      "descriptionPlain": "WHO ARE WE?\n\nCohere is the leading security-first enterprise AI company.  We build cutting-edge foundation AI models and end-to-end products that are designed to solve real-world business problems.\n\nWe’re training and deploying frontier models for enterprises who are building AI systems. We believe that our work is instrumental to the widespread adoption of AI and we are looking for folks that want to be part of that.\n\nWe obsess over what we build. Each one of us is responsible for contributing to increasing the capabilities of our models and the value they drive for our customers. Cohere is a team of researchers, engineers, designers, and more, who are all passionate about their craft.\n\nWe are a global technology company headquartered in Toronto with key offices in London, New York City, San Francisco, Montreal, Paris, Berlin and Seoul. Join us!\n\n\nABOUT NORTH:\n\nNorth https://cohere.com/north is Cohere's cutting-edge AI workspace platform, designed to revolutionize the way enterprises utilize AI. It offers a secure and customizable environment, allowing companies to deploy AI while maintaining control over sensitive data. North integrates seamlessly with existing workflows, providi",
+      "employmentType": "FullTime",
+      "id": "291e5dee-dcda-49e6-a1b6-dae0d48f80af",
+      "isListed": true,
+      "isRemote": true,
+      "jobUrl": "https://jobs.ashbyhq.com/cohere/291e5dee-dcda-49e6-a1b6-dae0d48f80af",
+      "location": "Middle East",
+      "publishedAt": "2026-09-10T09:55:34.718+00:00",
+      "secondaryLocations": [
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "United Arab Emirates",
+              "addressLocality": "Dubai"
+            }
+          },
+          "location": "Dubai"
+        },
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "United Arab Emirates"
+            }
+          },
+          "location": "United Arab Emirates"
+        },
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "Saudi Arabia"
+            }
+          },
+          "location": "Saudi Arabia"
+        },
+        {
+          "address": {
+            "postalAddress": {
+              "addressCountry": "Saudi Arabia",
+              "addressLocality": "Riyadh",
+              "addressRegion": "Riyadh"
+            }
+          },
+          "location": "Riyadh"
+        }
+      ],
+      "shouldDisplayCompensationOnJobPostings": false,
+      "team": "Delivery Engineering | Infrastructure",
+      "title": "Forward Deployed Engineer, Infrastructure Specialist (Middle East)",
+      "workplaceType": "Hybrid"
+    }
+  ]
+}

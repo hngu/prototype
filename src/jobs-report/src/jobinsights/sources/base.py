@@ -43,6 +43,23 @@ class BoardAdapter(Protocol):
     def parse(self, item: Any, envelope: Any, board: BoardRef) -> PostingRecord: ...
 
 
+def job_native_id(job: Any, board: BoardRef) -> str | None:
+    """`{slug}:{id}`, which is unique within a source. None if the job has no id."""
+    job_id = job.get("id") if isinstance(job, dict) else None
+    return f"{board.slug}:{job_id}" if job_id is not None else None
+
+
+def epoch_ms_to_utc(value: Any) -> str | None:
+    """Convert a timestamp in milliseconds since 1970 to UTC, keeping a bad value as text."""
+    if value is None:
+        return None
+    try:
+        parsed = datetime.fromtimestamp(value / 1000, UTC)
+    except (TypeError, ValueError, OverflowError, OSError):
+        return str(value)
+    return parsed.isoformat(timespec="seconds")
+
+
 def to_utc(value: str | None) -> str | None:
     """Convert an ISO-8601 timestamp with an offset to UTC.
 
