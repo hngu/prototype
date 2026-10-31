@@ -415,6 +415,14 @@ def upsert_posting(
     )
 
 
+def stored_native_ids(conn: sqlite3.Connection, source: str, board_id: int) -> set[str]:
+    """The jobs from this board that already have a posting, open or closed."""
+    rows = conn.execute(
+        "SELECT native_id FROM postings WHERE source = ? AND board_id = ?", (source, board_id)
+    )
+    return {row["native_id"] for row in rows}
+
+
 @dataclass(frozen=True, slots=True)
 class PayCandidate:
     posting_id: int

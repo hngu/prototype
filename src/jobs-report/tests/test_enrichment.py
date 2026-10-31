@@ -191,6 +191,18 @@ def test_a_posting_with_no_pay_is_not_looked_up_again(world: World) -> None:
     assert second.sources["greenhouse"].pay_lookups == 0
 
 
+def test_jobs_outside_the_filter_get_no_lookups(world: World) -> None:
+    world.add_board("acme")
+    jobs = [gh_job(1), gh_job(2, "Account Executive")]
+    world.route(ACME_URL, httpx.Response(200, json={"jobs": jobs, "meta": {"total": 2}}))
+    engineer = world.route(detail_url(1), found())
+
+    result = world.collect(day(1), pay_cap=5)
+
+    assert result.sources["greenhouse"].pay_lookups == 1
+    assert engineer.call_count == 1
+
+
 def test_a_closed_posting_is_not_looked_up(world: World) -> None:
     world.add_board("acme")
     world.route(ACME_URL, ok(1, 2), ok(1), ok(1))

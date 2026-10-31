@@ -103,7 +103,7 @@ def test_settings_load_the_collection_sections(project_dir: Path) -> None:
     assert settings.collect.retry_backoff_seconds == 30
     assert settings.caps.greenhouse_pay_enrichment_per_run == 200
     assert settings.reconcile.absences_to_close == 2
-    assert settings.reconcile.suspicious_drop_min_open == 20
+    assert settings.reconcile.suspicious_drop_min_open == 8
     assert settings.reconcile.zero_job_runs_to_release == 3
 
 

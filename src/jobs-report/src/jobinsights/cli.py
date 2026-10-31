@@ -247,7 +247,8 @@ def _echo_collection(result: CollectResult) -> None:
             f"{counts.boards_already_done} already done, {counts.retries} retries"
         )
         typer.echo(
-            f"    {counts.items:,} jobs: {counts.new:,} new, {counts.changed:,} changed, "
+            f"    {counts.items:,} jobs, {counts.skipped:,} skipped as not software engineering: "
+            f"{counts.new:,} new, {counts.changed:,} changed, "
             f"{counts.reopened:,} reposted, {counts.pending:,} missing, {counts.closed:,} closed"
         )
         typer.echo(f"    {counts.objects_stored:,} new archive objects")

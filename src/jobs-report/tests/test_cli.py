@@ -192,7 +192,7 @@ def test_collect_runs_and_a_second_run_has_nothing_to_do(
     assert first.exit_code == 0, first.output
     assert ": ok" in first.output
     assert "greenhouse: 1 boards ok, 0 failed" in first.output
-    assert "1 jobs: 1 new" in first.output
+    assert "1 jobs, 0 skipped as not software engineering: 1 new" in first.output
     assert second.exit_code == 0
     assert "nothing to do" in second.output
     assert route.call_count == 1

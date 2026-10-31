@@ -42,8 +42,9 @@ caps:
 reconcile:
   # A posting closes after this many consecutive successful fetches without it.
   absences_to_close: 2
-  # A board dropping from more than this many open postings to 0 holds closures.
-  suspicious_drop_min_open: 20
+  # A board with more than this many open postings returning no jobs at all holds closures.
+  # Postings are software engineering only, so this is lower than the 20 first planned.
+  suspicious_drop_min_open: 8
   # On this many zero-job runs in a row the drop is believed, and the held postings close.
   zero_job_runs_to_release: 3
 

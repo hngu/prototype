@@ -31,6 +31,7 @@ from jobinsights.config import SeedBoard, Settings, SourceConfig
 from jobinsights.http import FetchedResponse, PoliteClient
 from jobinsights.models import PostingRecord
 from jobinsights.reconcile import reconcile_board
+from jobinsights.role_filter import ROLE_FILTER_VERSION, is_software_engineering
 from jobinsights.sources import greenhouse
 from jobinsights.sources.base import BoardAdapter
 from jobinsights.store import repo
@@ -45,7 +46,8 @@ class SourceCounts:
     boards_failed: int = 0
     boards_already_done: int = 0
     retries: int = 0
-    items: int = 0
+    items: int = 0  # every job in the responses
+    skipped: int = 0  # not software engineering, so archived but not stored
     objects_stored: int = 0
     new: int = 0
     changed: int = 0
@@ -446,9 +448,16 @@ class _Collection:
                         "job failed to parse", extra={**log_context, "native_id": item.native_id}
                     )
 
+            new = changed = skipped = 0
             with self.jobs:
                 present = set()
+                stored = repo.stored_native_ids(self.jobs, ats, board.board_id)
                 for record, object_hash in parsed:
+                    # Once stored, a job stays tracked whatever its title becomes, because
+                    # dropping it now would look like it had closed. The archive keeps the rest.
+                    if record.native_id not in stored and not is_software_engineering(record.title):
+                        skipped += 1
+                        continue
                     result = repo.upsert_posting(
                         self.jobs,
                         record,
@@ -460,12 +469,13 @@ class _Collection:
                         keep_if_none=adapter.KEEP_IF_NONE,
                     )
                     present.add(result.posting_id)
-                    counts.new += int(result.is_new)
-                    counts.changed += int(result.changed)
+                    new += int(result.is_new)
+                    changed += int(result.changed)
                 reconciled = reconcile_board(
                     self.jobs,
                     board_id=board.board_id,
                     present_ids=present,
+                    response_items=len(archived.items),
                     run_date=self.run_date,
                     settings=self.settings.reconcile,
                     hold_absences=parse_errors > 0,
@@ -502,6 +512,9 @@ class _Collection:
 
         counts.boards_ok += 1
         counts.items += len(archived.items)
+        counts.skipped += skipped
+        counts.new += new
+        counts.changed += changed
         counts.parse_errors += parse_errors
         counts.opened += reconciled.events[SpanEvent.OPENED]
         counts.reopened += reconciled.events[SpanEvent.REOPENED]
@@ -647,7 +660,8 @@ class _Collection:
         ).fetchone()
         previous = json.loads(row["summary_json"]) if row["summary_json"] else {"collections": []}
         sources = {name: asdict(counts) for name, counts in self.counts.items()}
-        return {"collections": [*previous["collections"], {"sources": sources}]}
+        this_one = {"role_filter_version": ROLE_FILTER_VERSION, "sources": sources}
+        return {"collections": [*previous["collections"], this_one]}
 
 
 def _board_name(board: ActiveBoard) -> str:

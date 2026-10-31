@@ -11,6 +11,7 @@ import pytest
 from jobinsights import archive, pipeline
 from jobinsights.config import SeedBoard
 from jobinsights.pipeline import sync_seeds
+from jobinsights.role_filter import ROLE_FILTER_VERSION
 from jobinsights.sources import ashby, greenhouse, lever
 from jobinsights.store import repo
 from pipeline_world import (
@@ -94,11 +95,13 @@ def test_real_fixtures_flow_through_for_each_ats(
 
     counts = result.sources[ats]
     assert result.status == "ok"
-    assert (counts.boards_ok, counts.new, counts.opened, counts.parse_errors) == (1, 3, 3, 0)
-    assert world.jobs.execute("SELECT count(*) FROM postings").fetchone()[0] == 3
-    assert world.jobs.execute("SELECT count(*) FROM posting_spans").fetchone()[0] == 3
-    versions = world.jobs.execute("SELECT DISTINCT parser_version FROM postings").fetchall()
-    assert [row[0] for row in versions] == [adapter.PARSER_VERSION]
+    assert (counts.boards_ok, counts.items, counts.parse_errors) == (1, 3, 0)
+    assert counts.new + counts.skipped == 3
+    assert counts.opened == counts.new
+    assert world.jobs.execute("SELECT count(*) FROM postings").fetchone()[0] == counts.new
+    assert world.jobs.execute("SELECT count(*) FROM posting_spans").fetchone()[0] == counts.new
+    # Everything is archived, whichever jobs were stored.
+    assert world.archive.execute("SELECT count(*) FROM raw_objects").fetchone()[0] == 3
     world.assert_every_fetch_has_a_manifest()
 
 
@@ -141,6 +144,211 @@ def test_only_the_selected_sources_are_collected(world: World) -> None:
     assert route.call_count == 1
     assert set(result.sources) == {"lever"}
     assert world.fetches("acme") == []
+
+
+# --- only software engineering is stored --------------------------------------------------
+
+
+def mixed_response(*jobs: tuple[int, str]) -> httpx.Response:
+    bodies = [gh_job(job_id, title) for job_id, title in jobs]
+    return httpx.Response(200, json={"jobs": bodies, "meta": {"total": len(bodies)}})
+
+
+def test_only_software_engineering_jobs_are_stored_but_all_are_archived(world: World) -> None:
+    world.add_board("acme")
+    world.route(
+        ACME_URL,
+        mixed_response((1, "Software Engineer"), (2, "Account Executive"), (3, "Sales Engineer")),
+    )
+
+    result = world.collect(day(1))
+
+    counts = result.sources["greenhouse"]
+    assert result.status == "ok"
+    assert (counts.items, counts.new, counts.skipped, counts.opened) == (3, 1, 2, 1)
+    stored = [row[0] for row in world.jobs.execute("SELECT native_id FROM postings")]
+    assert stored == ["acme:1"]
+    assert world.jobs.execute("SELECT count(*) FROM descriptions").fetchone()[0] == 1
+    [fetch] = world.fetches()
+    assert fetch["item_count"] == 3  # the whole response
+    archived = archive.read_fetch(world.archive, fetch["fetch_id"])
+    assert archived is not None
+    assert [item.native_id for item in archived.items] == ["acme:1", "acme:2", "acme:3"]
+
+
+def test_the_filter_version_is_recorded_with_each_collection(world: World) -> None:
+    world.add_board("acme")
+    world.route(ACME_URL, ok(1))
+
+    world.collect(day(1))
+
+    summary = json.loads(world.run_row(day(1))["summary_json"])
+    assert summary["collections"][0]["role_filter_version"] == ROLE_FILTER_VERSION
+
+
+def test_a_job_retitled_out_of_scope_stays_tracked_and_does_not_close(world: World) -> None:
+    world.add_board("acme")
+    world.route(
+        ACME_URL,
+        mixed_response((1, "Software Engineer")),
+        mixed_response((1, "Account Executive")),
+        mixed_response((1, "Account Executive")),
+    )
+    world.collect(day(1))
+
+    second = world.collect(day(2))
+    third = world.collect(day(3))
+
+    assert second.sources["greenhouse"].changed == 1
+    assert second.sources["greenhouse"].pending == 0
+    assert third.sources["greenhouse"].closed == 0
+    assert world.spans("acme:1") == [("2026-10-01", None, None)]
+    row = world.jobs.execute("SELECT title, last_seen_date FROM postings").fetchone()
+    assert tuple(row) == ("Account Executive", "2026-10-03")
+    titles = world.jobs.execute(
+        "SELECT title FROM posting_versions ORDER BY observed_date"
+    ).fetchall()
+    assert [t[0] for t in titles] == ["Software Engineer", "Account Executive"]
+
+
+def test_a_job_retitled_into_scope_is_stored_from_that_day(world: World) -> None:
+    world.add_board("acme")
+    world.route(
+        ACME_URL,
+        mixed_response((1, "Account Executive")),
+        mixed_response((1, "Software Engineer")),
+    )
+    first = world.collect(day(1))
+
+    second = world.collect(day(2))
+
+    assert (first.sources["greenhouse"].new, first.sources["greenhouse"].skipped) == (0, 1)
+    assert second.sources["greenhouse"].new == 1
+    assert world.spans("acme:1") == [("2026-10-02", None, None)]
+    row = world.jobs.execute("SELECT first_seen_date, posted_at FROM postings").fetchone()
+    assert row["first_seen_date"] == "2026-10-02"
+    assert row["posted_at"] == "2026-09-01T14:00:00+00:00"  # the job's real age is still there
+
+
+def test_a_closed_job_retitled_out_of_scope_can_still_repost(world: World) -> None:
+    world.add_board("acme")
+    world.route(
+        ACME_URL,
+        mixed_response((1, "Software Engineer"), (2, "Software Engineer")),
+        mixed_response((2, "Software Engineer")),
+        mixed_response((2, "Software Engineer")),
+        mixed_response((1, "Account Executive"), (2, "Software Engineer")),
+    )
+    for n in (1, 2, 3):
+        world.collect(day(n))
+
+    result = world.collect(day(9))
+
+    assert result.sources["greenhouse"].reopened == 1
+    assert world.spans("acme:1") == [
+        ("2026-10-01", "2026-10-02", None),
+        ("2026-10-09", None, None),
+    ]
+
+
+def test_the_same_job_id_on_another_board_is_filtered_on_its_own(world: World) -> None:
+    world.add_board("acme")
+    world.add_board("other")
+    world.route(ACME_URL, mixed_response((1, "Software Engineer")))
+    world.route(OTHER_URL, mixed_response((1, "Account Executive")))
+
+    world.collect(day(1))
+
+    stored = [row[0] for row in world.jobs.execute("SELECT native_id FROM postings")]
+    assert stored == ["acme:1"]
+
+
+def test_out_of_scope_jobs_never_get_spans_or_absences(world: World) -> None:
+    world.add_board("acme")
+    world.route(
+        ACME_URL,
+        mixed_response((1, "Software Engineer"), (2, "Account Executive")),
+        mixed_response((1, "Software Engineer")),
+        mixed_response((1, "Software Engineer")),
+    )
+
+    results = [world.collect(day(n)) for n in (1, 2, 3)]
+
+    assert [r.sources["greenhouse"].pending for r in results] == [0, 0, 0]
+    assert world.jobs.execute("SELECT count(*) FROM posting_spans").fetchone()[0] == 1
+
+
+def test_a_response_with_only_out_of_scope_jobs_closes_normally(world: World) -> None:
+    world.add_board("acme")
+    gone = mixed_response((100, "Account Executive"))
+    world.route(ACME_URL, ok(*range(1, 11)), gone, gone)
+    world.collect(day(1))
+
+    second = world.collect(day(2))
+    third = world.collect(day(3))
+
+    assert second.sources["greenhouse"].held == 0
+    assert second.sources["greenhouse"].pending == 10
+    assert third.sources["greenhouse"].closed == 10
+    assert world.spans("acme:1") == [("2026-10-01", "2026-10-02", None)]
+
+
+@pytest.mark.parametrize(("open_jobs", "held"), [(9, 1), (8, 0)])
+def test_an_empty_response_is_held_above_the_threshold(
+    world: World, open_jobs: int, held: int
+) -> None:
+    world.add_board("acme")
+    world.route(ACME_URL, ok(*range(1, open_jobs + 1)), ok())
+    world.collect(day(1))
+
+    result = world.collect(day(2))
+
+    assert result.sources["greenhouse"].held == held
+
+
+def test_the_hold_threshold_counts_only_stored_jobs(world: World) -> None:
+    # 100 jobs on the board, but only 5 stored, so an empty response isn't held.
+    world.add_board("acme")
+    engineers = [(n, "Software Engineer") for n in range(1, 6)]
+    others = [(n, "Account Executive") for n in range(6, 101)]
+    world.route(ACME_URL, mixed_response(*engineers, *others), ok())
+    world.collect(day(1))
+
+    result = world.collect(day(2))
+
+    assert result.sources["greenhouse"].held == 0
+    assert result.sources["greenhouse"].pending == 5
+
+
+def test_a_parse_error_still_holds_closures_with_the_filter_on(world: World) -> None:
+    world.add_board("acme")
+    bad = httpx.Response(
+        200,
+        json={"jobs": [gh_job(1), {"id": 666}, gh_job(3, "Sales Engineer")], "meta": {"total": 3}},
+    )
+    world.route(ACME_URL, ok(1, 2), bad)
+    world.collect(day(1))
+
+    result = world.collect(day(2))
+
+    counts = result.sources["greenhouse"]
+    assert (counts.parse_errors, counts.skipped, counts.pending) == (1, 1, 0)
+    assert world.spans("acme:2") == [("2026-10-01", None, None)]
+
+
+def test_running_again_with_out_of_scope_jobs_changes_nothing(world: World) -> None:
+    world.add_board("acme")
+    route = world.route(
+        ACME_URL, mixed_response((1, "Software Engineer"), (2, "Account Executive"))
+    )
+    world.collect(day(1))
+    before = world.snapshot(ALL_JOBS_TABLES, ALL_ARCHIVE_TABLES)
+
+    second = world.collect(day(1))
+
+    assert second.nothing_to_do
+    assert route.call_count == 1
+    assert world.snapshot(ALL_JOBS_TABLES, ALL_ARCHIVE_TABLES) == before
 
 
 # --- running twice on the same day --------------------------------------------------------

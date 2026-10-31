@@ -19,7 +19,7 @@ from jobinsights.store.repo import SpanEvent
 @dataclass(frozen=True, slots=True)
 class ReconcileResult:
     events: Counter[SpanEvent]
-    # A board with many open postings returned none, and that's not yet believed.
+    # A board with many open postings returned no jobs at all, and that's not yet believed.
     held: bool = False
     # That drop was believed on this run, so the held postings were closed.
     released: bool = False
@@ -30,11 +30,16 @@ def reconcile_board(
     *,
     board_id: int,
     present_ids: Collection[int],
+    response_items: int,
     run_date: date,
     settings: ReconcileSettings,
     hold_absences: bool = False,
 ) -> ReconcileResult:
     """Mark `present_ids` present and the board's other open postings absent.
+
+    `response_items` counts every job in the response, stored or not. Only a
+    response with no jobs at all can be a glitch: one with jobs, none of them
+    software engineering, shows the API working, so its absences count as usual.
 
     `hold_absences` keeps the absences out, for a response that had jobs we
     couldn't parse: a missing posting might be one of those.
@@ -47,7 +52,7 @@ def reconcile_board(
         return ReconcileResult(events)
 
     absent_ids = open_ids - set(present_ids)
-    if not present_ids and len(open_ids) > settings.suspicious_drop_min_open:
+    if response_items == 0 and len(open_ids) > settings.suspicious_drop_min_open:
         zero_days = [*repo.zero_job_streak(conn, board_id, before=run_date), run_date]
         if len(zero_days) < settings.zero_job_runs_to_release:
             return ReconcileResult(events, held=True)

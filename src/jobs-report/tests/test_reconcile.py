@@ -74,18 +74,24 @@ class Board:
         *,
         settings: ReconcileSettings = SETTINGS,
         hold_absences: bool = False,
+        out_of_scope: int = 0,
     ) -> ReconcileResult:
-        """One successful fetch of the board on `on`, returning these postings."""
+        """One successful fetch of the board on `on`, returning these postings.
+
+        `out_of_scope` adds jobs to the response that aren't stored as postings.
+        """
+        response_items = len(present) + out_of_scope
         with self.conn:
             result = reconcile_board(
                 self.conn,
                 board_id=self.board_id,
                 present_ids=present,
+                response_items=response_items,
                 run_date=on,
                 settings=settings,
                 hold_absences=hold_absences,
             )
-        self.record_fetch(on, item_count=len(present))
+        self.record_fetch(on, item_count=response_items)
         return result
 
     def spans(self, posting_id: int) -> list[tuple[str, str | None, str | None]]:
@@ -385,6 +391,33 @@ def test_release_after_one_run_means_no_hold(board: Board) -> None:
     assert board.spans(ids[0]) == [("2026-10-01", "2026-10-05", None)]
 
 
+# --- responses with jobs that aren't stored --------------------------------------
+
+
+def test_jobs_all_out_of_scope_is_not_a_suspicious_drop(board: Board) -> None:
+    ids = board.add_postings(25)
+
+    first = board.collect(day(5), [], out_of_scope=40)
+    second = board.collect(day(6), [], out_of_scope=40)
+
+    assert not first.held
+    assert first.events == {SpanEvent.PENDING: 25}
+    assert second.events == {SpanEvent.CLOSED: 25}
+    assert board.spans(ids[0]) == [("2026-10-01", "2026-10-05", None)]
+
+
+def test_a_day_with_only_out_of_scope_jobs_resets_the_zero_job_count(board: Board) -> None:
+    ids = board.add_postings(25)
+
+    board.collect(day(5), [])
+    board.collect(day(6), ids, out_of_scope=40)
+    second = board.collect(day(7), [])
+    third = board.collect(day(8), [])
+
+    assert second.held
+    assert third.held  # only 2 zero-job runs since the board last had jobs
+
+
 # --- holding absences after a parse error ----------------------------------------
 
 
@@ -402,7 +435,7 @@ def test_hold_absences_marks_only_the_present(board: Board) -> None:
 def test_hold_absences_with_nothing_parsed_is_not_a_suspicious_drop(board: Board) -> None:
     ids = board.add_postings(25)
 
-    result = board.collect(day(2), [], hold_absences=True)
+    result = board.collect(day(2), [], hold_absences=True, out_of_scope=3)
 
     assert not result.held
     assert not result.released

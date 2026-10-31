@@ -428,3 +428,26 @@ def test_a_failed_lookup_waits_for_a_later_run(
 
     assert repo.pay_candidates(jobs_db, "greenhouse", limit=5, run_id=run_id) == []
     assert len(repo.pay_candidates(jobs_db, "greenhouse", limit=5, run_id=next_run)) == 1
+
+
+def test_stored_native_ids_cover_open_and_closed_postings_on_this_board(
+    jobs_db: sqlite3.Connection, make_record: MakeRecord
+) -> None:
+    board_id = add_board(jobs_db, "acme")
+    other = add_board(jobs_db, "other")
+    with jobs_db:
+        for native_id, on_board, source in (
+            ("acme:1", board_id, "greenhouse"),
+            ("acme:2", board_id, "greenhouse"),
+            ("other:1", other, "greenhouse"),
+            ("acme:9", board_id, "lever"),
+        ):
+            repo.upsert_posting(
+                jobs_db,
+                make_record(native_id=native_id, source=source),
+                run_date=DAY1,
+                parser_version="1",
+                board_id=on_board,
+            )
+
+    assert repo.stored_native_ids(jobs_db, "greenhouse", board_id) == {"acme:1", "acme:2"}
