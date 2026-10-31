@@ -37,7 +37,7 @@ def copy_migrations(tmp_path: Path) -> Path:
 def test_fresh_database_gets_every_migration(tmp_path: Path) -> None:
     conn = db.connect(tmp_path / "jobs.sqlite")
 
-    assert db.migrate(conn, db.MIGRATIONS_DIR) == ["001_initial.sql"]
+    assert db.migrate(conn, db.MIGRATIONS_DIR) == ["001_initial.sql", "002_daily_run.sql"]
     assert tables(conn) == JOBS_TABLES
 
 
@@ -119,3 +119,29 @@ def test_foreign_key_is_enforced(jobs_db: sqlite3.Connection) -> None:
             "INSERT INTO fetches (run_id, source, target, started_at, ok) "
             "VALUES (999, 'greenhouse', 'stripe', '2026-10-29T06:00:00+00:00', 0)"
         )
+
+
+def test_pending_migrations_lists_what_has_not_run(tmp_path: Path) -> None:
+    conn = db.connect(tmp_path / "jobs.sqlite")
+    everything = db.pending_migrations(conn, db.MIGRATIONS_DIR)
+
+    db.migrate(conn, db.MIGRATIONS_DIR)
+    afterwards = db.pending_migrations(conn, db.MIGRATIONS_DIR)
+    conn.close()
+
+    assert everything[:2] == ["001_initial.sql", "002_daily_run.sql"]
+    assert afterwards == []
+
+
+def test_a_run_date_can_only_have_one_run(tmp_path: Path) -> None:
+    conn = db.connect(tmp_path / "jobs.sqlite")
+    db.migrate(conn, db.MIGRATIONS_DIR)
+    insert = (
+        "INSERT INTO runs (run_date, started_at, status) "
+        "VALUES ('2026-10-01', '2026-10-01T06:00:00+00:00', 'ok')"
+    )
+    conn.execute(insert)
+
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(insert)
+    conn.close()

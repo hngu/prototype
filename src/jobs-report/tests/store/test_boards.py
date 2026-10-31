@@ -152,7 +152,7 @@ def record_fetch(
     target: str = "acme",
 ) -> None:
     with conn:
-        run_id = repo.start_run(conn, on, NOW)
+        run_id = repo.get_or_start_run(conn, on, NOW)
         fetch_id = repo.start_fetch(conn, run_id, "greenhouse", target, NOW, board_id=board_id)
         repo.finish_fetch(
             conn,
@@ -192,3 +192,75 @@ def test_the_streak_ignores_other_boards(jobs_db: sqlite3.Connection) -> None:
     record_fetch(jobs_db, other, DAY1, 0, target="other")
 
     assert repo.zero_job_streak(jobs_db, board_id, before=DAY2) == []
+
+
+# --- runs and fetches of boards -------------------------------------------------------
+
+
+def test_find_run_looks_up_by_date(jobs_db: sqlite3.Connection) -> None:
+    assert repo.find_run(jobs_db, DAY1) is None
+
+    with jobs_db:
+        run_id = repo.get_or_start_run(jobs_db, DAY1, NOW)
+
+    assert repo.find_run(jobs_db, DAY1) == run_id
+    assert repo.find_run(jobs_db, DAY2) is None
+
+
+def test_a_second_start_on_the_same_date_continues_the_run(jobs_db: sqlite3.Connection) -> None:
+    later = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
+    with jobs_db:
+        run_id = repo.get_or_start_run(jobs_db, DAY1, NOW, git_sha="old")
+        repo.finish_run(jobs_db, run_id, "partial", NOW)
+        again = repo.get_or_start_run(jobs_db, DAY1, later, git_sha="new")
+
+    row = jobs_db.execute("SELECT * FROM runs").fetchone()
+    assert again == run_id
+    assert row["status"] == "running"
+    assert row["finished_at"] is None
+    assert row["started_at"] == "2026-10-01T06:00:00+00:00"
+    assert row["git_sha"] == "new"
+    assert jobs_db.execute("SELECT count(*) FROM runs").fetchone()[0] == 1
+
+
+def test_different_dates_get_different_runs(jobs_db: sqlite3.Connection) -> None:
+    with jobs_db:
+        first = repo.get_or_start_run(jobs_db, DAY1, NOW)
+        second = repo.get_or_start_run(jobs_db, DAY2, NOW)
+
+    assert first != second
+
+
+def test_a_saved_response_is_marked_when_processed(jobs_db: sqlite3.Connection) -> None:
+    board_id = add_board(jobs_db, "acme")
+    with jobs_db:
+        run_id = repo.get_or_start_run(jobs_db, DAY1, NOW)
+        fetch_id = repo.start_fetch(jobs_db, run_id, "greenhouse", "acme", NOW, board_id=board_id)
+        repo.finish_fetch(
+            jobs_db, fetch_id, ok=False, http_status=200, item_count=None, duration_ms=5
+        )
+    [unprocessed] = repo.board_fetches(jobs_db, run_id)
+
+    with jobs_db:
+        repo.mark_fetch_processed(jobs_db, fetch_id, ok=True, item_count=3, processed_at=NOW)
+    [processed] = repo.board_fetches(jobs_db, run_id)
+
+    assert unprocessed == repo.BoardFetch(fetch_id, board_id, ok=False, processed_at=None)
+    assert processed.ok
+    assert processed.processed_at == "2026-10-01T06:00:00+00:00"
+    row = jobs_db.execute("SELECT * FROM fetches").fetchone()
+    assert (row["item_count"], row["http_status"], row["duration_ms"]) == (3, 200, 5)
+
+
+def test_board_fetches_leave_out_other_runs_and_single_job_requests(
+    jobs_db: sqlite3.Connection,
+) -> None:
+    board_id = add_board(jobs_db, "acme")
+    with jobs_db:
+        run_id = repo.get_or_start_run(jobs_db, DAY1, NOW)
+        other_run = repo.get_or_start_run(jobs_db, DAY2, NOW)
+        wanted = repo.start_fetch(jobs_db, run_id, "greenhouse", "acme", NOW, board_id=board_id)
+        repo.start_fetch(jobs_db, run_id, "greenhouse", "detail:acme:1", NOW, board_id=board_id)
+        repo.start_fetch(jobs_db, other_run, "greenhouse", "acme", NOW, board_id=board_id)
+
+    assert [fetch.fetch_id for fetch in repo.board_fetches(jobs_db, run_id)] == [wanted]

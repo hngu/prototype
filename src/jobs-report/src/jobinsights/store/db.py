@@ -70,6 +70,14 @@ def migrate(conn: sqlite3.Connection, migrations_dir: Path) -> list[str]:
     return newly_applied
 
 
+def pending_migrations(conn: sqlite3.Connection, migrations_dir: Path) -> list[str]:
+    """The file names of migrations not yet applied."""
+    conn.execute(_CREATE_BOOKKEEPING)
+    conn.commit()
+    applied = {row["version"] for row in conn.execute("SELECT version FROM schema_migrations")}
+    return [path.name for version, path in _discover(migrations_dir) if version not in applied]
+
+
 def _discover(migrations_dir: Path) -> list[tuple[int, Path]]:
     found: dict[int, Path] = {}
     for path in sorted(migrations_dir.glob("*.sql")):

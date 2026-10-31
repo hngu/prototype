@@ -54,7 +54,7 @@ class Board:
 
     def record_fetch(self, on: date, item_count: int | None, target: str = "acme") -> None:
         with self.conn:
-            run_id = repo.start_run(self.conn, on, NOW)
+            run_id = repo.get_or_start_run(self.conn, on, NOW)
             fetch_id = repo.start_fetch(
                 self.conn, run_id, "greenhouse", target, NOW, board_id=self.board_id
             )

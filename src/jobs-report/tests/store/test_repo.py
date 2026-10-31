@@ -39,7 +39,7 @@ def versions(conn: sqlite3.Connection, posting_id: int) -> list[tuple[str, str]]
 
 
 def test_run_starts_running_and_finishes(jobs_db: sqlite3.Connection) -> None:
-    run_id = repo.start_run(jobs_db, DAY1, NOW, git_sha="abc123")
+    run_id = repo.get_or_start_run(jobs_db, DAY1, NOW, git_sha="abc123")
     started = jobs_db.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
     assert (started["run_date"], started["status"]) == ("2026-10-29", "running")
     assert started["started_at"] == "2026-10-29T06:00:00+00:00"
@@ -55,7 +55,7 @@ def test_run_starts_running_and_finishes(jobs_db: sqlite3.Connection) -> None:
 def test_timestamps_are_stored_in_utc(jobs_db: sqlite3.Connection) -> None:
     pacific = datetime(2026, 10, 28, 23, 0, tzinfo=timezone(timedelta(hours=-7)))
 
-    run_id = repo.start_run(jobs_db, DAY1, pacific)
+    run_id = repo.get_or_start_run(jobs_db, DAY1, pacific)
 
     row = jobs_db.execute("SELECT started_at FROM runs WHERE run_id = ?", (run_id,)).fetchone()
     assert row["started_at"] == "2026-10-29T06:00:00+00:00"
@@ -63,11 +63,11 @@ def test_timestamps_are_stored_in_utc(jobs_db: sqlite3.Connection) -> None:
 
 def test_naive_timestamp_is_rejected(jobs_db: sqlite3.Connection) -> None:
     with pytest.raises(ValueError, match="no timezone"):
-        repo.start_run(jobs_db, DAY1, datetime(2026, 10, 29, 6, 0))
+        repo.get_or_start_run(jobs_db, DAY1, datetime(2026, 10, 29, 6, 0))
 
 
 def test_fetch_starts_not_ok_and_finishes(jobs_db: sqlite3.Connection) -> None:
-    run_id = repo.start_run(jobs_db, DAY1, NOW)
+    run_id = repo.get_or_start_run(jobs_db, DAY1, NOW)
     fetch_id = repo.start_fetch(jobs_db, run_id, "greenhouse", "stripe", NOW)
     assert jobs_db.execute("SELECT ok FROM fetches").fetchone()["ok"] == 0
 

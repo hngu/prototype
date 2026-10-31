@@ -36,7 +36,7 @@ def populated(jobs_db: sqlite3.Connection, make_record: MakeRecord, tmp_path: Pa
     - remotive feed posting C: first seen day 2, no spans (feeds can't close)
     """
     for n in range(1, 5):
-        run_id = repo.start_run(jobs_db, day(n), datetime(2026, 10, n, 6, tzinfo=UTC))
+        run_id = repo.get_or_start_run(jobs_db, day(n), datetime(2026, 10, n, 6, tzinfo=UTC))
         repo.start_fetch(
             jobs_db, run_id, "greenhouse", "stripe", datetime(2026, 10, n, 6, tzinfo=UTC)
         )

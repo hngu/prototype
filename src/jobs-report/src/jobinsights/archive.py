@@ -241,6 +241,11 @@ def iter_manifests(
         )
 
 
+def count_objects(conn: sqlite3.Connection, source: str) -> int:
+    row = conn.execute("SELECT count(*) FROM raw_objects WHERE source = ?", (source,)).fetchone()
+    return row[0]
+
+
 def prune(conn: sqlite3.Connection, today: date, retention_days: int) -> PruneResult:
     """Keep the last `retention_days` run dates, today included, and commit.
 

@@ -39,6 +39,12 @@ Deciding a job is no longer open, which ends its [span](#span). A job closes onl
 from 2 successful [fetches](#fetch) on different days. Its `close_date` is the first day it was
 missing, not the day we became sure.
 
+### Collection
+
+One use of `jobs collect`. It fetches boards, retries the ones that failed, then parses the saved
+responses. A [run](#run) can have several collections in a day, for example if a later one picks up
+boards that failed earlier.
+
 ### Discovery
 
 Finding new company boards to track, by spotting ATS links in other data. Built in Milestone 3.

@@ -32,6 +32,7 @@ Keep this list current as commands are added.
 - `uv run jobs db migrate`: apply pending migrations to both databases
 - `uv run jobs db build-duckdb`: rebuild `data/jobs.duckdb` from SQLite
 - `uv run jobs db export`: write one Parquet file per table to `data/exports/`
+- `uv run jobs collect --source greenhouse|lever|ashby|boards [--force]`: fetch company job boards, archive each response, then parse. Running it again the same day only retries boards that failed; `--force` fetches them all again
 - `uv run jobs daily`: the full daily pipeline
 - `uv run jobs reprocess --from YYYY-MM-DD --to YYYY-MM-DD`: re-parse archived data with the current parsers. It's a dry run that prints a diff by default; add `--apply` to write.
 - `uv run pytest`: unit tests, no network

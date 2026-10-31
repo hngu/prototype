@@ -34,12 +34,25 @@ def _json(value: Any) -> str:
 # --- runs and fetches -------------------------------------------------------
 
 
-def start_run(
+def find_run(conn: sqlite3.Connection, run_date: date) -> int | None:
+    row = conn.execute(
+        "SELECT run_id FROM runs WHERE run_date = ?", (run_date.isoformat(),)
+    ).fetchone()
+    return row["run_id"] if row is not None else None
+
+
+def get_or_start_run(
     conn: sqlite3.Connection, run_date: date, started_at: datetime, git_sha: str | None = None
 ) -> int:
+    """Start the run for this UTC date, or continue it if it already exists.
+
+    A continued run is `running` again and keeps its original `started_at`.
+    """
     row = conn.execute(
-        "INSERT INTO runs (run_date, started_at, status, git_sha) "
-        "VALUES (?, ?, 'running', ?) RETURNING run_id",
+        "INSERT INTO runs (run_date, started_at, status, git_sha) VALUES (?, ?, 'running', ?) "
+        "ON CONFLICT (run_date) DO UPDATE SET status = 'running', finished_at = NULL, "
+        "git_sha = excluded.git_sha "
+        "RETURNING run_id",
         (run_date.isoformat(), _timestamp(started_at), git_sha),
     ).fetchone()
     return row["run_id"]
@@ -90,6 +103,49 @@ def finish_fetch(
         "WHERE fetch_id = ?",
         (int(ok), http_status, item_count, duration_ms, error, fetch_id),
     )
+
+
+def mark_fetch_processed(
+    conn: sqlite3.Connection,
+    fetch_id: int,
+    *,
+    ok: bool,
+    item_count: int | None,
+    processed_at: datetime,
+    error: str | None = None,
+) -> None:
+    """A saved response has been parsed into postings; ok means complete and parsed."""
+    conn.execute(
+        "UPDATE fetches SET ok = ?, item_count = ?, error = ?, processed_at = ? WHERE fetch_id = ?",
+        (int(ok), item_count, error, _timestamp(processed_at), fetch_id),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class BoardFetch:
+    fetch_id: int
+    board_id: int
+    ok: bool
+    processed_at: str | None
+
+
+def board_fetches(conn: sqlite3.Connection, run_id: int) -> list[BoardFetch]:
+    """This run's fetches of whole boards (target is the slug), not requests for one job."""
+    rows = conn.execute(
+        "SELECT f.fetch_id, f.board_id, f.ok, f.processed_at FROM fetches f "
+        "JOIN boards b ON b.board_id = f.board_id AND b.slug = f.target "
+        "WHERE f.run_id = ? ORDER BY f.fetch_id",
+        (run_id,),
+    )
+    return [
+        BoardFetch(
+            fetch_id=row["fetch_id"],
+            board_id=row["board_id"],
+            ok=bool(row["ok"]),
+            processed_at=row["processed_at"],
+        )
+        for row in rows
+    ]
 
 
 # --- companies and boards ---------------------------------------------------
