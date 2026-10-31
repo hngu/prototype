@@ -167,6 +167,76 @@ def upsert_board(
     return row["board_id"]
 
 
+@dataclass(frozen=True, slots=True)
+class ActiveBoard:
+    board_id: int
+    company_id: int | None
+    ref: BoardRef
+
+
+def active_boards(conn: sqlite3.Connection, ats: str | None = None) -> list[ActiveBoard]:
+    """Boards to fetch, optionally for one ATS, in a stable order."""
+    query = "SELECT board_id, company_id, ats, region, slug FROM boards WHERE status = 'active'"
+    params: list[str] = []
+    if ats is not None:
+        query += " AND ats = ?"
+        params.append(ats)
+    return [
+        ActiveBoard(
+            board_id=row["board_id"],
+            company_id=row["company_id"],
+            ref=BoardRef(ats=row["ats"], region=row["region"], slug=row["slug"]),
+        )
+        for row in conn.execute(query + " ORDER BY ats, region, slug", params)
+    ]
+
+
+def record_board_success(conn: sqlite3.Connection, board_id: int, run_date: date) -> None:
+    """The board answered with a complete response. The first one starts its tracking."""
+    day = run_date.isoformat()
+    conn.execute(
+        "UPDATE boards SET last_ok_date = ?, first_tracked_date = COALESCE(first_tracked_date, ?), "
+        "consecutive_failures = 0 WHERE board_id = ?",
+        (day, day, board_id),
+    )
+
+
+def record_board_failure(conn: sqlite3.Connection, board_id: int) -> None:
+    conn.execute(
+        "UPDATE boards SET consecutive_failures = consecutive_failures + 1 WHERE board_id = ?",
+        (board_id,),
+    )
+
+
+def zero_job_streak(conn: sqlite3.Connection, board_id: int, before: date) -> list[date]:
+    """The run dates before `before` on which this board last returned no jobs, oldest first.
+
+    Walks back from `before` and stops at the latest date the board returned
+    jobs. A failed fetch has no item_count, so it neither adds to the streak nor
+    ends it. If a date has several fetches, its latest answer counts. Only fetches
+    of the board itself count (their target is the slug), not requests for one job.
+    """
+    rows = conn.execute(
+        "SELECT r.run_date, f.item_count FROM fetches f "
+        "JOIN runs r ON r.run_id = f.run_id "
+        "JOIN boards b ON b.board_id = f.board_id AND b.slug = f.target "
+        "WHERE f.board_id = ? AND f.item_count IS NOT NULL AND r.run_date < ? "
+        "ORDER BY r.run_date DESC, f.fetch_id DESC",
+        (board_id, before.isoformat()),
+    )
+    streak: list[date] = []
+    seen_dates: set[str] = set()
+    for row in rows:
+        if row["run_date"] in seen_dates:
+            continue
+        seen_dates.add(row["run_date"])
+        if row["item_count"] > 0:
+            break
+        streak.append(date.fromisoformat(row["run_date"]))
+    streak.reverse()
+    return streak
+
+
 # --- descriptions and postings ------------------------------------------------
 
 
@@ -321,11 +391,11 @@ def _record_version(
 
 # --- spans (PLAN.md §5.3) -----------------------------------------------------
 #
-# The per-posting state machine. Reconcile (Milestone 2) decides when to call
-# these: only for snapshot boards whose fetch succeeded this run, and not at
-# all when a board suspiciously drops to 0 postings. A posting closes after 2
-# absences on different run_dates; settings.yaml `reconcile.absences_to_close`
-# documents that number, and pending_absent_date can only count to 2.
+# The per-posting state machine. `reconcile.py` decides when to call these: only
+# for snapshot boards whose fetch succeeded this run, and not while a board's
+# drop to 0 postings is on hold. A posting closes after 2 absences on different
+# run_dates; settings.yaml `reconcile.absences_to_close` documents that number,
+# and pending_absent_date can only count to 2.
 
 
 class SpanEvent(StrEnum):
@@ -343,6 +413,17 @@ def _open_span(conn: sqlite3.Connection, posting_id: int) -> sqlite3.Row | None:
         "WHERE posting_id = ? AND close_date IS NULL",
         (posting_id,),
     ).fetchone()
+
+
+def open_posting_ids(conn: sqlite3.Connection, board_id: int) -> set[int]:
+    """The board's postings that have an open span."""
+    rows = conn.execute(
+        "SELECT p.posting_id FROM postings p "
+        "JOIN posting_spans s ON s.posting_id = p.posting_id "
+        "WHERE p.board_id = ? AND s.close_date IS NULL",
+        (board_id,),
+    )
+    return {row["posting_id"] for row in rows}
 
 
 def mark_present(conn: sqlite3.Connection, posting_id: int, run_date: date) -> SpanEvent:
