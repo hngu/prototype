@@ -31,9 +31,10 @@ from jobinsights.config import SeedBoard, Settings, SourceConfig
 from jobinsights.http import FetchedResponse, PoliteClient
 from jobinsights.models import PostingRecord
 from jobinsights.reconcile import reconcile_board
+from jobinsights.sources import greenhouse
 from jobinsights.sources.base import BoardAdapter
 from jobinsights.store import repo
-from jobinsights.store.repo import ActiveBoard, BoardFetch, RunStatus, SpanEvent
+from jobinsights.store.repo import ActiveBoard, BoardFetch, PayCandidate, RunStatus, SpanEvent
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,9 @@ class SourceCounts:
     held: int = 0
     released: int = 0
     parse_errors: int = 0
+    pay_lookups: int = 0
+    pay_found: int = 0
+    pay_failed: int = 0
 
 
 @dataclass(slots=True)
@@ -168,7 +172,7 @@ class _Collection:
             and fetch.processed_at is None
             and fetch.board_id in board_ids
         ]
-        if not to_fetch and not leftovers:
+        if not to_fetch and not leftovers and not self._pay_candidates(existing_run):
             return self._nothing_to_do(boards, existing_run)
 
         with self.jobs:
@@ -183,6 +187,7 @@ class _Collection:
             failed = await self._fetch_with_retries(to_fetch)
             self._process_saved_responses(boards)
             self._record_failures(failed, earlier)
+            await self._look_up_pay()
             for name, before in objects_before.items():
                 stored = archive.count_objects(self.archive, name) - before
                 self.counts[name].objects_stored = stored
@@ -217,6 +222,16 @@ class _Collection:
         """Today's fetches whose complete response is in the archive."""
         manifests = archive.iter_manifests(self.archive, self.run_date, self.run_date)
         return {manifest.fetch_id for manifest in manifests if manifest.ok}
+
+    def _pay_candidates(self, run_id: int | None) -> list[PayCandidate]:
+        """Postings to look up pay for, up to what's left of today's cap."""
+        if greenhouse.NAME not in self.adapters:
+            return []
+        cap = self.settings.caps.greenhouse_pay_enrichment_per_run
+        used = repo.pay_lookups_in_run(self.jobs, greenhouse.NAME, run_id) if run_id else 0
+        if used >= cap:
+            return []
+        return repo.pay_candidates(self.jobs, greenhouse.NAME, cap - used, run_id)
 
     # --- fetching ------------------------------------------------------------------
 
@@ -347,6 +362,7 @@ class _Collection:
         self,
         board: ActiveBoard,
         *,
+        target: str | None = None,
         url: str,
         started_at: datetime,
         ok: bool,
@@ -356,22 +372,23 @@ class _Collection:
         items: list[ArchiveItem] | None = None,
         error: str | None = None,
         error_body: bytes | None = None,
-    ) -> None:
-        """Record one fetch: its row, then its manifest and objects.
+    ) -> int:
+        """Record one fetch: its row, then its manifest and objects. Returns its id.
 
         The row's `ok` stays 0 even for a good response, until it has been parsed.
         """
         ats = board.ref.ats
+        target = target or board.ref.slug
         with self.jobs:
             fetch_id = repo.start_fetch(
-                self.jobs, self.run_id, ats, board.ref.slug, started_at, board_id=board.board_id
+                self.jobs, self.run_id, ats, target, started_at, board_id=board.board_id
             )
         archive.write_manifest(
             self.archive,
             fetch_id=fetch_id,
             run_date=self.run_date,
             source=ats,
-            target=board.ref.slug,
+            target=target,
             request_url=url,
             ok=ok,
             http_status=http_status,
@@ -390,6 +407,7 @@ class _Collection:
                 duration_ms=duration_ms,
                 error=error,
             )
+        return fetch_id
 
     # --- processing ------------------------------------------------------------------
 
@@ -439,6 +457,7 @@ class _Collection:
                         archive_hash=object_hash,
                         board_id=board.board_id,
                         company_id=board.company_id,
+                        keep_if_none=adapter.KEEP_IF_NONE,
                     )
                     present.add(result.posting_id)
                     counts.new += int(result.is_new)
@@ -505,6 +524,107 @@ class _Collection:
             if board.board_id not in already_tried:
                 with self.jobs:
                     repo.record_board_failure(self.jobs, board.board_id)
+
+    # --- pay lookups ----------------------------------------------------------------
+
+    async def _look_up_pay(self) -> None:
+        """Ask Greenhouse for pay on postings that haven't had a lookup yet.
+
+        These are extras: a failure is counted and tried again another day, and
+        never affects the run's status, its boards or their closures.
+        """
+        candidates = self._pay_candidates(self.run_id)
+        boards = {b.ref: b for b in repo.active_boards(self.jobs, ats=greenhouse.NAME)}
+        await asyncio.gather(*(self._look_up_one(c, boards[c.board]) for c in candidates))
+
+    async def _look_up_one(self, candidate: PayCandidate, board: ActiveBoard) -> None:
+        counts = self.counts[greenhouse.NAME]
+        counts.pay_lookups += 1
+        try:
+            await self._fetch_pay(candidate, board)
+        except Exception:
+            counts.pay_failed += 1
+            logger.exception(
+                "pay lookup failed unexpectedly",
+                extra={
+                    "run_id": self.run_id,
+                    "source": greenhouse.NAME,
+                    "native_id": candidate.native_id,
+                },
+            )
+
+    async def _fetch_pay(self, candidate: PayCandidate, board: ActiveBoard) -> None:
+        counts = self.counts[greenhouse.NAME]
+        target = f"{repo.PAY_TARGET_PREFIX}{candidate.native_id}"
+        job_id = candidate.native_id.removeprefix(f"{board.ref.slug}:")
+        source = self.sources[greenhouse.NAME]
+        log_context = {
+            "run_id": self.run_id,
+            "source": greenhouse.NAME,
+            "native_id": candidate.native_id,
+        }
+        response = await self.client.get(greenhouse.detail_url(board.ref, job_id, source))
+        common = {
+            "target": target,
+            "url": response.url,
+            "started_at": response.started_at,
+            "http_status": response.status,
+            "duration_ms": response.duration_ms,
+        }
+        if not response.ok:
+            counts.pay_failed += 1
+            logger.warning("pay lookup failed", extra={**log_context, "error": response.error})
+            self._save_fetch(
+                board,
+                **common,
+                ok=False,
+                error=response.error,
+                error_body=response.body or (response.error or "").encode(),
+            )
+            return
+
+        payload = _decode(response.body or b"")
+        if not isinstance(payload, dict):
+            counts.pay_failed += 1
+            error = f"expected an object, got {type(payload).__name__}"
+            logger.warning("pay lookup failed", extra={**log_context, "error": error})
+            self._save_fetch(
+                board,
+                **common,
+                ok=False,
+                items=[ArchiveItem(native_id=None, body=payload, kind="response")],
+                error=error,
+                error_body=error.encode(),
+            )
+            return
+
+        fetch_id = self._save_fetch(
+            board,
+            **common,
+            ok=True,
+            items=[ArchiveItem(native_id=candidate.native_id, body=payload, kind="detail")],
+        )
+        try:
+            pay = greenhouse.parse_pay_detail(payload, None, board.ref)
+            with self.jobs:
+                repo.set_posting_pay(self.jobs, candidate.posting_id, pay, self.run_date)
+                repo.mark_fetch_processed(
+                    self.jobs, fetch_id, ok=True, item_count=1, processed_at=self.now()
+                )
+        except Exception as exc:
+            counts.pay_failed += 1
+            logger.exception("pay lookup failed to parse", extra=log_context)
+            with self.jobs:
+                repo.mark_fetch_processed(
+                    self.jobs,
+                    fetch_id,
+                    ok=False,
+                    item_count=1,
+                    processed_at=self.now(),
+                    error=f"{type(exc).__name__}: {exc}",
+                )
+            return
+        counts.pay_found += int(pay.salary_raw is not None)
 
     # --- results ---------------------------------------------------------------------
 

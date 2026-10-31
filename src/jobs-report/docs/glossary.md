@@ -101,7 +101,9 @@ A label on each parser (`PARSER_VERSION`), changed whenever the parser's output 
 ### Pay lookup
 
 An extra request for one Greenhouse job, to get its structured pay range, which the board's job list
-leaves out. Limited per [run](#run). Also called pay enrichment.
+leaves out. Also called pay enrichment. Limited per [run](#run), and any open posting without a
+successful lookup is eligible, newest first, so a backlog drains over several days. Each posting is
+looked up once, so later pay changes aren't noticed.
 
 ### Pending absence
 

@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from jobinsights import archive
 from jobinsights.config import load_sources
 from jobinsights.descriptions import html_to_text
-from jobinsights.models import BoardRef
+from jobinsights.models import BoardRef, PayDetails
 from jobinsights.sources import BOARD_ADAPTERS, greenhouse
 from jobinsights.sources.base import ResponseShapeError, to_utc
 from jobinsights.store import repo
@@ -260,6 +260,116 @@ def test_salary_fields_survive_a_parse_returning_none() -> None:
         "salary_period",
         "salary_raw",
     }
+
+
+# --- pay details ----------------------------------------------------------------------
+
+
+def detail(name: str) -> dict[str, Any]:
+    return json.loads((FIXTURES / "details" / f"{name}.json").read_text())
+
+
+def pay_range(**overrides: Any) -> dict[str, Any]:
+    fields = {
+        "min_cents": 10000000,
+        "max_cents": 15050000,
+        "currency_type": "USD",
+        "title": "US",
+        "blurb": "<p>Long boilerplate</p>",
+    }
+    return fields | overrides
+
+
+def test_detail_url_comes_from_sources_yaml() -> None:
+    source = load_sources(Path(__file__).parent.parent.parent)["greenhouse"]
+
+    assert greenhouse.detail_url(STRIPE, "123", source) == (
+        "https://boards-api.greenhouse.io/v1/boards/stripe/jobs/123?pay_transparency=true"
+    )
+
+
+def test_detail_url_escapes_its_parts() -> None:
+    source = load_sources(Path(__file__).parent.parent.parent)["greenhouse"]
+
+    url = greenhouse.detail_url(board("a/b"), "1/2", source)
+
+    assert "/boards/a%2Fb/jobs/1%2F2?" in url
+
+
+def test_detail_url_refuses_an_unverified_region() -> None:
+    source = load_sources(Path(__file__).parent.parent.parent)["greenhouse"]
+
+    with pytest.raises(ValueError, match="region"):
+        greenhouse.detail_url(BoardRef(ats="greenhouse", region="eu", slug="acme"), "1", source)
+
+
+def test_pay_from_a_real_response_with_one_range() -> None:
+    pay = greenhouse.parse_pay_detail(detail("airbnb-8231416"), None, board("airbnb"))
+
+    assert pay.salary_min == 102000
+    assert pay.salary_max == 120000
+    assert pay.salary_currency == "USD"
+    assert pay.salary_period is None
+    assert pay.salary_raw == (
+        '[{"currency_type":"USD","max_cents":12000000,"min_cents":10200000,"title":"Pay Range"}]'
+    )
+
+
+@pytest.mark.parametrize("name", ["airbnb-7789554", "stripe-8172510"])
+def test_pay_from_a_real_response_with_none(name: str) -> None:
+    assert greenhouse.parse_pay_detail(detail(name), None, STRIPE) == PayDetails()
+
+
+def test_cents_become_units() -> None:
+    pay = greenhouse.parse_pay_detail({"pay_input_ranges": [pay_range()]}, None, STRIPE)
+
+    assert (pay.salary_min, pay.salary_max) == (100000, 150500)
+
+
+def test_the_blurb_stays_out_of_salary_raw() -> None:
+    pay = greenhouse.parse_pay_detail({"pay_input_ranges": [pay_range()]}, None, STRIPE)
+
+    assert "boilerplate" not in (pay.salary_raw or "")
+
+
+def test_several_ranges_fill_only_salary_raw() -> None:
+    ranges = [pay_range(), pay_range(currency_type="CAD", title="Canada")]
+
+    pay = greenhouse.parse_pay_detail({"pay_input_ranges": ranges}, None, STRIPE)
+
+    assert pay.salary_min is None
+    assert pay.salary_max is None
+    assert pay.salary_currency is None
+    assert [entry["title"] for entry in json.loads(pay.salary_raw or "")] == ["US", "Canada"]
+
+
+def test_a_range_with_missing_numbers_is_kept_as_given() -> None:
+    entry = {"currency_type": "USD", "title": "US"}
+
+    pay = greenhouse.parse_pay_detail({"pay_input_ranges": [entry]}, None, STRIPE)
+
+    assert pay.salary_min is None
+    assert pay.salary_max is None
+    assert pay.salary_currency == "USD"
+    assert pay.salary_raw == '[{"currency_type":"USD","title":"US"}]'
+
+
+def test_a_response_without_ranges_is_an_error_not_no_pay() -> None:
+    with pytest.raises(KeyError):
+        greenhouse.parse_pay_detail({"id": 1}, None, STRIPE)
+    with pytest.raises(ValueError, match="not a list"):
+        greenhouse.parse_pay_detail({"pay_input_ranges": "soon"}, None, STRIPE)
+
+
+def test_pay_parsing_is_pure() -> None:
+    item = detail("airbnb-8231416")
+    before = copy.deepcopy(item)
+
+    first = greenhouse.parse_pay_detail(item, None, STRIPE)
+    second = greenhouse.parse_pay_detail(item, None, STRIPE)
+
+    assert first == second
+    assert item == before
 
 
 # --- purity and the path through storage ------------------------------------------

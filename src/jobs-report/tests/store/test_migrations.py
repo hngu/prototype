@@ -37,7 +37,11 @@ def copy_migrations(tmp_path: Path) -> Path:
 def test_fresh_database_gets_every_migration(tmp_path: Path) -> None:
     conn = db.connect(tmp_path / "jobs.sqlite")
 
-    assert db.migrate(conn, db.MIGRATIONS_DIR) == ["001_initial.sql", "002_daily_run.sql"]
+    assert db.migrate(conn, db.MIGRATIONS_DIR) == [
+        "001_initial.sql",
+        "002_daily_run.sql",
+        "003_fetches_target_index.sql",
+    ]
     assert tables(conn) == JOBS_TABLES
 
 
@@ -129,7 +133,11 @@ def test_pending_migrations_lists_what_has_not_run(tmp_path: Path) -> None:
     afterwards = db.pending_migrations(conn, db.MIGRATIONS_DIR)
     conn.close()
 
-    assert everything[:2] == ["001_initial.sql", "002_daily_run.sql"]
+    assert everything == [
+        "001_initial.sql",
+        "002_daily_run.sql",
+        "003_fetches_target_index.sql",
+    ]
     assert afterwards == []
 
 

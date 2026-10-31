@@ -5,9 +5,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import respx
 
 from jobinsights.models import BoardRef, PostingRecord
 from jobinsights.store import db
+from pipeline_world import World
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
@@ -36,6 +38,14 @@ def project_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     shutil.copytree(PROJECT_ROOT / "config", tmp_path / "config")
     monkeypatch.chdir(tmp_path)
     return tmp_path
+
+
+@pytest.fixture
+def world(tmp_path: Path, respx_mock: respx.MockRouter) -> Iterator[World]:
+    """Two migrated databases and a collection with mocked HTTP; see pipeline_world.py."""
+    world = World(tmp_path, respx_mock)
+    yield world
+    world.close()
 
 
 MakeRecord = Callable[..., PostingRecord]

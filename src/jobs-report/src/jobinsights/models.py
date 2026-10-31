@@ -18,6 +18,18 @@ class BoardRef(BaseModel):
     slug: str = Field(min_length=1)
 
 
+class PayDetails(BaseModel):
+    """Pay found by a separate request for one job, not in the board's job list."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    salary_min: float | None = None
+    salary_max: float | None = None
+    salary_currency: str | None = None
+    salary_period: str | None = None
+    salary_raw: str | None = None
+
+
 class PostingRecord(BaseModel):
     """One job posting as parsed from one archived item."""
 

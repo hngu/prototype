@@ -251,6 +251,11 @@ def _echo_collection(result: CollectResult) -> None:
             f"{counts.reopened:,} reposted, {counts.pending:,} missing, {counts.closed:,} closed"
         )
         typer.echo(f"    {counts.objects_stored:,} new archive objects")
+        if counts.pay_lookups:
+            typer.echo(
+                f"    {counts.pay_lookups:,} pay lookups: {counts.pay_found:,} found pay, "
+                f"{counts.pay_failed:,} failed"
+            )
         if counts.parse_errors or counts.held or counts.released:
             typer.echo(
                 f"    {counts.parse_errors:,} parse errors, {counts.held:,} boards held, "

@@ -1,11 +1,13 @@
 """Record trimmed test fixtures from real boards, through the shared polite client.
 
     uv run python scripts/record_fixtures.py greenhouse stripe airbnb --jobs 3
+    uv run python scripts/record_fixtures.py greenhouse airbnb --detail-id 8231416
 
 Each board is first checked in full: its whole response must split and every job
 must parse, so a recording doubles as a check of the adapter against real data.
 Only then is it trimmed to a few jobs with short descriptions, and written to
-tests/fixtures/<source>/<slug>.json.
+tests/fixtures/<source>/<slug>.json. `--detail-id` records Greenhouse single-job
+responses instead, to tests/fixtures/greenhouse/details/<slug>-<id>.json.
 """
 
 import asyncio
@@ -19,7 +21,7 @@ import typer
 from jobinsights.config import Settings, SourceConfig, load_contact_email, load_sources
 from jobinsights.http import PoliteClient, host_limits
 from jobinsights.models import BoardRef
-from jobinsights.sources import BOARD_ADAPTERS
+from jobinsights.sources import BOARD_ADAPTERS, greenhouse
 from jobinsights.sources.base import BoardAdapter
 
 FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "fixtures"
@@ -89,6 +91,27 @@ TRIMMERS: dict[str, Callable[[Any, int], Any]] = {
 }
 
 
+async def _record_details(source: SourceConfig, slug: str, job_ids: list[str]) -> None:
+    settings = Settings.load()
+    board = BoardRef(ats=greenhouse.NAME, slug=slug)
+    async with PoliteClient(settings.http, load_contact_email(), host_limits([source])) as client:
+        for job_id in job_ids:
+            response = await client.get(greenhouse.detail_url(board, job_id, source))
+            if not response.ok or response.body is None:
+                typer.echo(f"{slug}/{job_id}: {response.error}", err=True)
+                raise typer.Exit(code=1)
+            payload = json.loads(response.body)
+            pay = greenhouse.parse_pay_detail(payload, None, board)
+            typer.echo(f"{slug}/{job_id}: {pay.salary_raw}")
+            payload["content"] = _shorten(payload["content"])
+            for entry in payload["pay_input_ranges"]:
+                entry["blurb"] = _shorten(entry["blurb"])
+            path = FIXTURES_DIR / greenhouse.NAME / "details" / f"{slug}-{job_id}.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            text = json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True)
+            path.write_text(text + "\n")
+
+
 def _check_in_full(adapter: BoardAdapter, payload: Any, board: BoardRef) -> None:
     split = adapter.split(payload, board)
     failures = []
@@ -133,7 +156,13 @@ def main(
     source: Annotated[str, typer.Argument(help="A board source, e.g. greenhouse.")],
     slugs: Annotated[list[str], typer.Argument(help="Board slugs to record.")],
     jobs: Annotated[int, typer.Option(help="Jobs to keep per board.")] = 3,
+    detail_id: Annotated[
+        list[str] | None, typer.Option(help="Record these Greenhouse single-job responses.")
+    ] = None,
 ) -> None:
+    if detail_id:
+        asyncio.run(_record_details(load_sources()[source], slugs[0], detail_id))
+        return
     asyncio.run(
         _record(BOARD_ADAPTERS[source], load_sources()[source], TRIMMERS[source], slugs, jobs)
     )

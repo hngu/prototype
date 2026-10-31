@@ -9,15 +9,18 @@ import json
 import re
 import sqlite3
 import unicodedata
+from collections.abc import Collection
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
 from jobinsights.descriptions import compress, description_hash, html_to_text, normalize_text
-from jobinsights.models import BoardRef, PostingRecord
+from jobinsights.models import BoardRef, PayDetails, PostingRecord
 
 RunStatus = Literal["ok", "partial", "failed"]
+# A pay lookup's `fetches.target` is this plus the posting's native_id.
+PAY_TARGET_PREFIX = "detail:"
 BoardStatus = Literal["candidate", "active", "inactive", "invalid"]
 
 
@@ -339,15 +342,18 @@ def upsert_posting(
     archive_hash: str | None = None,
     board_id: int | None = None,
     company_id: int | None = None,
+    keep_if_none: Collection[str] = (),
 ) -> UpsertResult:
     """Insert or update a posting, its description, and its change log.
 
     Re-running the same record on the same day changes nothing. Upserts for a
-    posting must arrive in run_date order.
+    posting must arrive in run_date order. A field in `keep_if_none` keeps its
+    stored value when the record has none, for fields a later request fills in.
     """
     day = run_date.isoformat()
+    kept = "".join(f", {column}" for column in keep_if_none)
     existing = conn.execute(
-        "SELECT posting_id, last_seen_date FROM postings WHERE source = ? AND native_id = ?",
+        f"SELECT posting_id, last_seen_date{kept} FROM postings WHERE source = ? AND native_id = ?",
         (record.source, record.native_id),
     ).fetchone()
     if existing is not None and day < existing["last_seen_date"]:
@@ -382,6 +388,10 @@ def upsert_posting(
         "posted_at": record.posted_at,
         "source_updated_at": record.source_updated_at,
     }
+    if existing is not None:
+        for column in keep_if_none:
+            if fields[column] is None:
+                fields[column] = existing[column]
     if existing is None:
         columns = ["source", "native_id", *fields, "first_seen_date", "last_seen_date"]
         values = [record.source, record.native_id, *fields.values(), day, day]
@@ -403,6 +413,74 @@ def upsert_posting(
     return UpsertResult(
         posting_id, is_new=existing is None, changed=changed and existing is not None
     )
+
+
+@dataclass(frozen=True, slots=True)
+class PayCandidate:
+    posting_id: int
+    native_id: str
+    board: BoardRef
+
+
+def pay_candidates(
+    conn: sqlite3.Connection, source: str, limit: int, run_id: int | None = None
+) -> list[PayCandidate]:
+    """Open postings still waiting for a pay lookup, newest first.
+
+    That's those with no successful lookup yet. A posting already tried in
+    `run_id` waits for the next day, so running again the same day repeats nothing.
+    """
+    rows = conn.execute(
+        "SELECT p.posting_id, p.native_id, b.ats, b.region, b.slug FROM postings p "
+        "JOIN boards b ON b.board_id = p.board_id "
+        "JOIN posting_spans s ON s.posting_id = p.posting_id AND s.close_date IS NULL "
+        "WHERE p.source = ? AND b.status = 'active' "
+        "AND NOT EXISTS (SELECT 1 FROM fetches f WHERE f.source = p.source "
+        "  AND f.target = ? || p.native_id AND (f.ok = 1 OR f.run_id = ?)) "
+        "ORDER BY p.first_seen_date DESC, p.posting_id DESC LIMIT ?",
+        (source, PAY_TARGET_PREFIX, run_id, limit),
+    )
+    return [
+        PayCandidate(
+            posting_id=row["posting_id"],
+            native_id=row["native_id"],
+            board=BoardRef(ats=row["ats"], region=row["region"], slug=row["slug"]),
+        )
+        for row in rows
+    ]
+
+
+def pay_lookups_in_run(conn: sqlite3.Connection, source: str, run_id: int) -> int:
+    """How many pay lookups this run has already made, successful or not."""
+    row = conn.execute(
+        "SELECT count(*) FROM fetches WHERE run_id = ? AND source = ? AND target LIKE ?",
+        (run_id, source, f"{PAY_TARGET_PREFIX}%"),
+    ).fetchone()
+    return row[0]
+
+
+def set_posting_pay(
+    conn: sqlite3.Connection, posting_id: int, pay: PayDetails, run_date: date
+) -> None:
+    """Store pay found by a lookup, and log it. No pay found means nothing to write."""
+    if pay.salary_raw is None:
+        return
+    conn.execute(
+        "UPDATE postings SET salary_min = ?, salary_max = ?, salary_currency = ?, "
+        "salary_period = ?, salary_raw = ? WHERE posting_id = ?",
+        (
+            pay.salary_min,
+            pay.salary_max,
+            pay.salary_currency,
+            pay.salary_period,
+            pay.salary_raw,
+            posting_id,
+        ),
+    )
+    row = conn.execute(
+        f"SELECT {', '.join(_VERSIONED)} FROM postings WHERE posting_id = ?", (posting_id,)
+    ).fetchone()
+    _record_version(conn, posting_id, run_date.isoformat(), tuple(row[f] for f in _VERSIONED))
 
 
 def _record_version(

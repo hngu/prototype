@@ -9,9 +9,9 @@ import html
 from typing import Any
 from urllib.parse import quote
 
-from jobinsights.archive import ArchiveItem
+from jobinsights.archive import ArchiveItem, canonical_json
 from jobinsights.config import SourceConfig
-from jobinsights.models import BoardRef, PostingRecord
+from jobinsights.models import BoardRef, PayDetails, PostingRecord
 from jobinsights.sources.base import ResponseShapeError, Split, job_native_id, to_utc
 
 NAME = "greenhouse"
@@ -73,6 +73,45 @@ def parse(item: Any, envelope: Any, board: BoardRef) -> PostingRecord:
         source_updated_at=to_utc(item.get("updated_at")),
         extra={key: value for key, value in extra.items() if value},
     )
+
+
+def detail_url(board: BoardRef, job_id: str, source: SourceConfig) -> str:
+    """The single-job request that returns `pay_input_ranges`."""
+    if board.region != "default":
+        raise ValueError(f"no verified Greenhouse API host for region {board.region!r}")
+    assert source.detail_endpoint is not None
+    return source.detail_endpoint.format(
+        slug=quote(board.slug, safe=""), job_id=quote(job_id, safe="")
+    )
+
+
+def parse_pay_detail(item: Any, envelope: Any, board: BoardRef) -> PayDetails:
+    """Pay from one single-job response. An empty PayDetails means none is published.
+
+    Only a single range fills the structured fields; `salary_raw` keeps them all.
+    Each range's `blurb` is long boilerplate, which stays in the archive only.
+    """
+    ranges = item["pay_input_ranges"]
+    if not isinstance(ranges, list):
+        raise ValueError(f"`pay_input_ranges` is {type(ranges).__name__}, not a list")
+    if not ranges:
+        return PayDetails()
+    raw = canonical_json(
+        [{key: value for key, value in entry.items() if key != "blurb"} for entry in ranges]
+    )
+    if len(ranges) > 1:
+        return PayDetails(salary_raw=raw)
+    [entry] = ranges
+    return PayDetails(
+        salary_min=_from_cents(entry.get("min_cents")),
+        salary_max=_from_cents(entry.get("max_cents")),
+        salary_currency=entry.get("currency_type"),
+        salary_raw=raw,
+    )
+
+
+def _from_cents(value: Any) -> float | None:
+    return value / 100 if value is not None else None
 
 
 def _names(entries: Any) -> list[str]:

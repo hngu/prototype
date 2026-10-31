@@ -1,0 +1,111 @@
+{
+  "absolute_url": "https://careers.airbnb.com/positions/8231416?gh_jid=8231416",
+  "ai_disclaimer": null,
+  "ai_opt_out_request_url": null,
+  "application_deadline": null,
+  "company_name": "Airbnb",
+  "content": "&lt;div class=&quot;content-intro&quot;&gt;&lt;p&gt;&lt;span style=&quot;font-family: helvetica, arial, sans-serif; font-size: 12pt;&quot;&gt;Airbnb was born in 2007 when two hosts welcomed three guests to their San Francisco home, and has since grown to over 5 million hosts who have welcomed over 2 billion guest arrivals in almost every country across the globe. Every day, hosts offer unique stays and experiences that make it possible for guests to connect with communities in a more authentic way.&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;&lt;p&gt;&lt;span style=&quot;font-family: arial, helvetica, sans-serif; color: #000000;&quot;&gt;&lt;strong&gt;The Community You Will Join:&amp;nbsp;&lt;/strong&gt;&lt;/span&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;The Procurement team at Airbnb manages the source-to-pay processes including Accounts Payable, Travel and Expense, and the Contingent Workforce program. Procurement Innovation is a pillar within Procurement overseeing procurement tools, processes, reporting, and AI.&amp;nbsp;&lt;/li&gt;\n&lt;li&gt;We are a collaborative, forward-thinking team that embraces an AI-first mindset — leveraging technology, automation, and data to simplify processes and un",
+  "data_compliance": [
+    {
+      "demographic_data_consent_applies": false,
+      "requires_consent": false,
+      "requires_processing_consent": false,
+      "requires_retention_consent": false,
+      "retention_period": null,
+      "type": "gdpr"
+    }
+  ],
+  "departments": [
+    {
+      "child_ids": [],
+      "id": 76,
+      "name": "Financial Planning and Analysis",
+      "parent_id": 73694
+    }
+  ],
+  "first_published": "2026-09-24T18:17:39-04:00",
+  "id": 8231416,
+  "include_ai_disclaimer": null,
+  "internal_job_id": 3562002,
+  "language": "en",
+  "location": {
+    "name": "United States "
+  },
+  "metadata": [
+    {
+      "id": 9245691,
+      "name": "Is this job part of ACC?",
+      "value": false,
+      "value_type": "yes_no"
+    },
+    {
+      "id": 10216612,
+      "name": "Workplace Type",
+      "value": "Remote",
+      "value_type": "single_select"
+    }
+  ],
+  "offices": [
+    {
+      "child_ids": [
+        246412,
+        258081,
+        258082,
+        258083,
+        87306,
+        87309,
+        211524,
+        87312,
+        87316,
+        87315,
+        104152,
+        88158,
+        85791,
+        87313,
+        88161,
+        87308,
+        87311,
+        87307,
+        80804,
+        109320,
+        87314,
+        88160,
+        78632,
+        87310,
+        88159,
+        241531,
+        108489,
+        62810,
+        62444,
+        85003,
+        104153,
+        12964,
+        11235,
+        55,
+        4447,
+        5924,
+        1316,
+        162,
+        5925,
+        1086,
+        1355
+      ],
+      "id": 63868,
+      "location": null,
+      "name": "United States",
+      "parent_id": 17515
+    }
+  ],
+  "pay_input_ranges": [
+    {
+      "blurb": "<p><span style=\"font-size: 16px;\"><strong><span style=\"font-family: arial, helvetica, sans-serif; color: rgb(0, 0, 0);\">How We'll Take Care of You:</span></strong></span></p>\n<p class=\"p1\"><span style=\"font-size: 16px;\">Our job titles may span more than one career level. The actual base pay is dependent upon many factors, such as: training, transferable skills, work experience, business needs and market demands. The base pay range is subject to change and may be modified in the future. This role may also be eligible for bonus, equity, benefits, and Employee Travel Credits. &nbsp;</span></p>",
+      "currency_type": "USD",
+      "max_cents": 12000000,
+      "min_cents": 10200000,
+      "title": "Pay Range"
+    }
+  ],
+  "requisition_id": "ONE",
+  "title": "Associate Principal, Procurement Innovation Supplier Programs",
+  "updated_at": "2026-09-29T20:00:54-04:00"
+}

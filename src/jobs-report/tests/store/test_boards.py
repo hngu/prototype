@@ -2,7 +2,7 @@ import sqlite3
 from collections.abc import Callable
 from datetime import UTC, date, datetime
 
-from jobinsights.models import BoardRef, PostingRecord
+from jobinsights.models import BoardRef, PayDetails, PostingRecord
 from jobinsights.store import repo
 
 MakeRecord = Callable[..., PostingRecord]
@@ -264,3 +264,167 @@ def test_board_fetches_leave_out_other_runs_and_single_job_requests(
         repo.start_fetch(jobs_db, other_run, "greenhouse", "acme", NOW, board_id=board_id)
 
     assert [fetch.fetch_id for fetch in repo.board_fetches(jobs_db, run_id)] == [wanted]
+
+
+# --- keep_if_none and pay ------------------------------------------------------------
+
+
+PAY = PayDetails(
+    salary_min=100, salary_max=200, salary_currency="USD", salary_period="year", salary_raw="$"
+)
+PAY_FIELDS = ("salary_min", "salary_max", "salary_currency", "salary_period", "salary_raw")
+
+
+def pay_columns(conn: sqlite3.Connection, posting_id: int) -> tuple[object, ...]:
+    row = conn.execute(
+        f"SELECT {', '.join(PAY_FIELDS)} FROM postings WHERE posting_id = ?", (posting_id,)
+    ).fetchone()
+    return tuple(row)
+
+
+def version_rows(conn: sqlite3.Connection, posting_id: int) -> list[tuple[str, str | None]]:
+    rows = conn.execute(
+        "SELECT observed_date, salary_raw FROM posting_versions WHERE posting_id = ? "
+        "ORDER BY observed_date",
+        (posting_id,),
+    )
+    return [(row[0], row[1]) for row in rows]
+
+
+def test_keep_if_none_keeps_stored_values_when_the_record_has_none(
+    jobs_db: sqlite3.Connection, make_record: MakeRecord
+) -> None:
+    with jobs_db:
+        result = repo.upsert_posting(
+            jobs_db, make_record(salary_raw=None), run_date=DAY1, parser_version="1"
+        )
+        repo.set_posting_pay(jobs_db, result.posting_id, PAY, DAY1)
+        again = repo.upsert_posting(
+            jobs_db,
+            make_record(salary_raw=None),
+            run_date=DAY2,
+            parser_version="1",
+            keep_if_none=PAY_FIELDS,
+        )
+
+    assert not again.changed
+    assert pay_columns(jobs_db, result.posting_id) == (100, 200, "USD", "year", "$")
+    assert version_rows(jobs_db, result.posting_id) == [("2026-10-01", "$")]
+
+
+def test_keep_if_none_still_takes_a_new_value(
+    jobs_db: sqlite3.Connection, make_record: MakeRecord
+) -> None:
+    with jobs_db:
+        result = repo.upsert_posting(
+            jobs_db, make_record(salary_raw="old"), run_date=DAY1, parser_version="1"
+        )
+        again = repo.upsert_posting(
+            jobs_db,
+            make_record(salary_raw="new"),
+            run_date=DAY2,
+            parser_version="1",
+            keep_if_none=PAY_FIELDS,
+        )
+
+    assert again.changed
+    assert version_rows(jobs_db, result.posting_id) == [
+        ("2026-10-01", "old"),
+        ("2026-10-02", "new"),
+    ]
+
+
+def test_keep_if_none_on_a_new_posting_is_harmless(
+    jobs_db: sqlite3.Connection, make_record: MakeRecord
+) -> None:
+    with jobs_db:
+        result = repo.upsert_posting(
+            jobs_db,
+            make_record(salary_raw=None),
+            run_date=DAY1,
+            parser_version="1",
+            keep_if_none=PAY_FIELDS,
+        )
+
+    assert result.is_new
+    assert pay_columns(jobs_db, result.posting_id) == (None, None, None, None, None)
+
+
+def test_without_keep_if_none_a_removed_salary_is_a_real_change(
+    jobs_db: sqlite3.Connection, make_record: MakeRecord
+) -> None:
+    with jobs_db:
+        result = repo.upsert_posting(
+            jobs_db, make_record(salary_raw="$1"), run_date=DAY1, parser_version="1"
+        )
+        again = repo.upsert_posting(
+            jobs_db, make_record(salary_raw=None), run_date=DAY2, parser_version="1"
+        )
+
+    assert again.changed
+    assert version_rows(jobs_db, result.posting_id) == [("2026-10-01", "$1"), ("2026-10-02", None)]
+
+
+def test_pay_found_with_no_value_writes_nothing(
+    jobs_db: sqlite3.Connection, make_record: MakeRecord
+) -> None:
+    with jobs_db:
+        result = repo.upsert_posting(
+            jobs_db, make_record(salary_raw="$1"), run_date=DAY1, parser_version="1"
+        )
+        repo.set_posting_pay(jobs_db, result.posting_id, PayDetails(), DAY2)
+
+    assert pay_columns(jobs_db, result.posting_id)[-1] == "$1"
+    assert version_rows(jobs_db, result.posting_id) == [("2026-10-01", "$1")]
+
+
+def test_pay_candidates_skip_posts_looked_up_and_respect_the_limit(
+    jobs_db: sqlite3.Connection, make_record: MakeRecord
+) -> None:
+    board_id = add_board(jobs_db, "acme")
+    with jobs_db:
+        run_id = repo.get_or_start_run(jobs_db, DAY1, NOW)
+        ids = {}
+        for n in (1, 2, 3):
+            native_id = f"acme:{n}"
+            ids[n] = repo.upsert_posting(
+                jobs_db,
+                make_record(native_id=native_id),
+                run_date=DAY1,
+                parser_version="1",
+                board_id=board_id,
+            ).posting_id
+            repo.mark_present(jobs_db, ids[n], DAY1)
+        done = repo.start_fetch(
+            jobs_db, run_id, "greenhouse", "detail:acme:3", NOW, board_id=board_id
+        )
+        repo.mark_fetch_processed(jobs_db, done, ok=True, item_count=1, processed_at=NOW)
+
+    candidates = repo.pay_candidates(jobs_db, "greenhouse", limit=5)
+    limited = repo.pay_candidates(jobs_db, "greenhouse", limit=1)
+
+    assert [c.native_id for c in candidates] == ["acme:2", "acme:1"]
+    assert candidates[0].board == BoardRef(ats="greenhouse", slug="acme")
+    assert [c.native_id for c in limited] == ["acme:2"]
+    assert repo.pay_lookups_in_run(jobs_db, "greenhouse", run_id) == 1
+
+
+def test_a_failed_lookup_waits_for_a_later_run(
+    jobs_db: sqlite3.Connection, make_record: MakeRecord
+) -> None:
+    board_id = add_board(jobs_db, "acme")
+    with jobs_db:
+        run_id = repo.get_or_start_run(jobs_db, DAY1, NOW)
+        next_run = repo.get_or_start_run(jobs_db, DAY2, NOW)
+        posting_id = repo.upsert_posting(
+            jobs_db,
+            make_record(native_id="acme:1"),
+            run_date=DAY1,
+            parser_version="1",
+            board_id=board_id,
+        ).posting_id
+        repo.mark_present(jobs_db, posting_id, DAY1)
+        repo.start_fetch(jobs_db, run_id, "greenhouse", "detail:acme:1", NOW, board_id=board_id)
+
+    assert repo.pay_candidates(jobs_db, "greenhouse", limit=5, run_id=run_id) == []
+    assert len(repo.pay_candidates(jobs_db, "greenhouse", limit=5, run_id=next_run)) == 1

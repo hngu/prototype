@@ -86,7 +86,15 @@ def collect_project(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A project with both databases created and a contact email set."""
     monkeypatch.setenv("CONTACT_EMAIL", "jobs@acme.test")
     assert runner.invoke(app, ["db", "init"]).exit_code == 0
+    set_pay_cap(project_dir, 0)  # pay lookups have their own test below
     return project_dir
+
+
+def set_pay_cap(project_dir: Path, cap: int) -> None:
+    path = project_dir / "config" / "settings.yaml"
+    settings = yaml.safe_load(path.read_text())
+    settings["caps"]["greenhouse_pay_enrichment_per_run"] = cap
+    path.write_text(yaml.safe_dump(settings))
 
 
 def write_seeds(project_dir: Path, *boards: tuple[str, str]) -> None:
@@ -263,3 +271,20 @@ def test_collect_exits_2_when_every_board_fails(
 
     assert result.exit_code == 2
     assert ": failed" in result.output
+
+
+def test_collect_looks_up_pay_and_reports_it(
+    collect_project: Path, respx_mock: respx.MockRouter
+) -> None:
+    set_pay_cap(collect_project, 200)
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    ranges = [{"min_cents": 100, "max_cents": 200, "currency_type": "USD"}]
+    respx_mock.get(
+        "https://boards-api.greenhouse.io/v1/boards/acme/jobs/1?pay_transparency=true"
+    ).mock(return_value=httpx.Response(200, json={"id": 1, "pay_input_ranges": ranges}))
+
+    result = runner.invoke(app, ["collect", "--source", "boards"])
+
+    assert result.exit_code == 0, result.output
+    assert "1 pay lookups: 1 found pay, 0 failed" in result.output
