@@ -141,6 +141,13 @@ A job that closed and later came back. It keeps its posting row and gets a new [
 Parsing archived responses again with the current parsers (`jobs reprocess`), to fix a parser bug
 without calling any source. Built in Milestone 5.
 
+### Role filter
+
+The rule deciding which jobs count as software engineering, from the title alone
+(`src/jobinsights/role_filter.py`). Only matching jobs are stored as [postings](#posting), while the
+[archive](#archive) keeps them all. It's strict on purpose, so it misses some real software roles,
+such as "Data Scientist" or "Tech Lead", rather than storing a "Sales Engineer".
+
 ### Run
 
 One day's collection, with one row in the `runs` table per UTC day. Running `jobs collect` again the

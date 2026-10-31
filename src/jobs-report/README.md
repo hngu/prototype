@@ -10,16 +10,17 @@ open?" can be answered later.
 - **Phase 2 (later):** normalizing titles, seniority, locations, technologies and pay, then
   answering the question bank in [PLAN.md](PLAN.md#9-phase-2-question-bank).
 
-**Status:** Milestone 1, storage layer, is done: both databases, the raw archive, and the
-DuckDB and Parquet builds work. Collection starts in Milestone 2. See [PLAN.md](PLAN.md) for the
-roadmap.
+**Status:** Milestone 2 is done: `jobs collect` fetches about 50 company job boards from
+Greenhouse, Lever and Ashby, and keeps each posting's history. Scheduling it daily is next. See
+[PLAN.md](PLAN.md) for the roadmap.
 
 ## How it works
 
 1. Every API response is saved first to a raw archive (`data/archive.sqlite`, last 90 days),
-   so it can be re-parsed after a parser fix.
+   so it can be re-parsed after a parser fix. Boards that fail are retried a few times.
 2. It's then parsed into SQLite (`data/jobs.sqlite`), the system of record, which keeps each
-   posting's open spans and change history.
+   posting's open spans and change history. A posting closes only after it's missing from 2
+   successful fetches on different days, so an outage can't look like closed jobs.
 3. A DuckDB database and Parquet exports are rebuilt from SQLite for analysis.
 
 New to the vocabulary (spans, manifests, snapshots)? See the [glossary](docs/glossary.md).
@@ -55,7 +56,11 @@ uv sync                    # create .venv and install dependencies
 cp .env.example .env       # then set CONTACT_EMAIL (and API keys as sources are enabled)
 uv run jobs --help         # list commands
 uv run jobs db init        # create data/ and both databases
+uv run jobs collect --source boards   # fetch every board and store what changed
 ```
+
+Running `jobs collect` again the same day only retries the boards that failed. It exits 0 if the
+whole day is fine, 1 if some boards failed and 2 if all of them did.
 
 Development:
 
@@ -71,7 +76,8 @@ stays fast and offline:
 
 - **`integration`** needs real infrastructure but calls no job source. Today that's DuckDB:
   the first run downloads DuckDB's sqlite extension once and caches it in `~/.duckdb`.
-- **`live`** calls the real job-source APIs.
+- **`live`** calls the real job-source APIs, and needs `CONTACT_EMAIL` set. Any other test that
+  tries to use the network fails.
 
 ## Data
 

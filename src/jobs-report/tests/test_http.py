@@ -494,3 +494,14 @@ def test_secrets_stay_out_of_results_and_logs(
         logged = str(vars(record))
         assert "hunter2" not in logged
         assert "header-secret" not in logged
+
+
+def test_unit_tests_cannot_reach_the_real_network() -> None:
+    limits = {"api.test": NO_LIMIT}
+
+    async def go() -> None:
+        async with PoliteClient(SETTINGS, "jobs@acme.test", limits) as client:
+            await client.get(URL)
+
+    with pytest.raises(BaseException, match="tried to connect"):
+        asyncio.run(go())

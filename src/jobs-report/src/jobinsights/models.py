@@ -58,7 +58,7 @@ class PostingRecord(BaseModel):
 
     apply_url: str | None = None
     source_url: str | None = None
-    ats_ref: str | None = None  # 'greenhouse:stripe:12345', parsed from a URL (Milestone 2)
+    ats_ref: str | None = None  # 'greenhouse:stripe:12345', parsed from a URL (Milestone 3)
 
     posted_at: str | None = None  # as reported by the source
     source_updated_at: str | None = None

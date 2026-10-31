@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from jobinsights.config import ConfigError, Settings, load_contact_email, load_seeds, load_sources
 from jobinsights.models import BoardRef
+from jobinsights.sources import BOARD_ADAPTERS
 
 CONFIG_DIR = Path(__file__).parent.parent / "config"
 
@@ -81,6 +82,17 @@ def test_settings_defaults() -> None:
 
 def test_seeds_is_a_list() -> None:
     assert isinstance(load("seeds.yaml")["boards"], list)
+
+
+def test_real_seeds_are_valid_and_spread_across_the_ats_sources() -> None:
+    seeds = load_seeds(CONFIG_DIR.parent)
+    sources = load_sources(CONFIG_DIR.parent)
+
+    assert 30 <= len(seeds) <= 50
+    assert {seed.ats for seed in seeds} == {"greenhouse", "lever", "ashby"}
+    for seed in seeds:
+        assert sources[seed.ats].enabled
+        assert seed.ats in BOARD_ADAPTERS
 
 
 def test_settings_load_the_collection_sections(project_dir: Path) -> None:

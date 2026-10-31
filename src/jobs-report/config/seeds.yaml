@@ -4,6 +4,62 @@
 # Optional: region: eu (for EU-hosted boards).
 #
 # Never invent a slug (CLAUDE.md rule 3): add a board only after its API has returned a
-# valid response. Filled in Milestone 2.
+# valid response. Every board here was probed on 2026-10-31: it returned jobs, all of them
+# parsed, and its descriptions name the company. `uv run pytest -m live` checks them again.
 
-boards: []
+boards:
+  # --- Greenhouse -----------------------------------------------------------------------
+  - { ats: greenhouse, slug: affirm, name: Affirm }
+  - { ats: greenhouse, slug: airbnb, name: Airbnb }
+  - { ats: greenhouse, slug: anthropic, name: Anthropic }
+  - { ats: greenhouse, slug: asana, name: Asana }
+  - { ats: greenhouse, slug: brex, name: Brex }
+  - { ats: greenhouse, slug: cloudflare, name: Cloudflare }
+  - { ats: greenhouse, slug: coinbase, name: Coinbase }
+  - { ats: greenhouse, slug: databricks, name: Databricks }
+  - { ats: greenhouse, slug: datadog, name: Datadog }
+  - { ats: greenhouse, slug: discord, name: Discord }
+  - { ats: greenhouse, slug: dropbox, name: Dropbox }
+  - { ats: greenhouse, slug: elastic, name: Elastic }
+  - { ats: greenhouse, slug: figma, name: Figma }
+  - { ats: greenhouse, slug: gitlab, name: GitLab }
+  - { ats: greenhouse, slug: lyft, name: Lyft }
+  - { ats: greenhouse, slug: mongodb, name: MongoDB }
+  - { ats: greenhouse, slug: okta, name: Okta }
+  - { ats: greenhouse, slug: pinterest, name: Pinterest }
+  - { ats: greenhouse, slug: reddit, name: Reddit }
+  - { ats: greenhouse, slug: robinhood, name: Robinhood }
+  - { ats: greenhouse, slug: roblox, name: Roblox }
+  - { ats: greenhouse, slug: scaleai, name: Scale AI }
+  - { ats: greenhouse, slug: stripe, name: Stripe }
+  - { ats: greenhouse, slug: twilio, name: Twilio }
+  - { ats: greenhouse, slug: vercel, name: Vercel }
+
+  # --- Lever ----------------------------------------------------------------------------
+  - { ats: lever, slug: jumpcloud, name: JumpCloud }
+  - { ats: lever, slug: outreach, name: Outreach }
+  - { ats: lever, slug: palantir, name: Palantir }
+  - { ats: lever, slug: shieldai, name: Shield AI }
+  - { ats: lever, slug: sonarsource, name: Sonar }
+  - { ats: lever, slug: spotify, name: Spotify }
+  - { ats: lever, slug: zoox, name: Zoox }
+
+  # --- Ashby ----------------------------------------------------------------------------
+  - { ats: ashby, slug: cohere, name: Cohere }
+  - { ats: ashby, slug: deepgram, name: Deepgram }
+  - { ats: ashby, slug: elevenlabs, name: ElevenLabs }
+  - { ats: ashby, slug: harvey, name: Harvey }
+  - { ats: ashby, slug: langchain, name: LangChain }
+  - { ats: ashby, slug: linear, name: Linear }
+  - { ats: ashby, slug: lovable, name: Lovable }
+  - { ats: ashby, slug: mercor, name: Mercor }
+  - { ats: ashby, slug: modal, name: Modal }
+  - { ats: ashby, slug: notion, name: Notion }
+  - { ats: ashby, slug: openai, name: OpenAI }
+  - { ats: ashby, slug: perplexity, name: Perplexity }
+  - { ats: ashby, slug: posthog, name: PostHog }
+  - { ats: ashby, slug: ramp, name: Ramp }
+  - { ats: ashby, slug: replit, name: Replit }
+  - { ats: ashby, slug: sierra, name: Sierra }
+  - { ats: ashby, slug: supabase, name: Supabase }
+  - { ats: ashby, slug: vanta, name: Vanta }

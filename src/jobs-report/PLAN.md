@@ -37,6 +37,7 @@ Phase 1 stores everything those later phases need.
 | Snapshot vs. feed | Each source declares whether one fetch returns a company's complete board (`snapshot=True`) or a partial list (`snapshot=False`). | Closed jobs can only be inferred from complete snapshots. For feeds, a job missing from today's results tells us nothing. |
 | History model | `first_seen_date` / `last_seen_date` per posting, plus **open spans** (`posting_spans`) and a **change log** (`posting_versions`) | Spans give exact "open on day X" counts and catch reposts. They're far smaller than a row per posting per day. |
 | False closures | A posting closes only after it's **absent from 2 consecutive successful fetches** of its board. `close_date` = first absent date. | Protects against API hiccups and partial responses. |
+| Same-day collection | One `runs` row per UTC day. Successful responses are kept, only failed boards are retried, and parsing waits until fetching ends, so the day is processed as one run. Running again the same day continues that run. | A failure can be retried without refetching what worked. Running twice changes nothing, including log rows. |
 | Fixed company panel | Every board records `first_tracked_date` and `discovered_via` | As discovery adds companies, total job counts rise even if nobody is hiring more. Phase 2 measures trends on a fixed set of companies. |
 | Descriptions | Stored once per unique text (`sha256` hash), as zlib-compressed plain text in SQLite. The DuckDB build decompresses them. | Most text repeats day to day. Compression keeps the database small enough for free storage tiers. |
 | Raw archive | Every fetch is archived **before parsing**: each job object as the source returned it, stored once per content hash, plus a daily manifest of which objects each fetch returned and whether it succeeded. Kept **90 days** (configurable). Parsers are versioned, and `jobs reprocess` re-parses archived data after a parser fix or schema change (§5.4). | Most jobs look the same every day, so storing each object once keeps 90 days small. Manifests record failed fetches too, so a replay can't turn an outage into fake closures. Data older than 90 days survives only as parsed rows, an accepted trade-off for now. |
@@ -53,7 +54,7 @@ Phase 1 stores everything those later phases need.
 
 | Source | Endpoint (verify) | Auth | Notes |
 |---|---|---|---|
-| greenhouse | `GET https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true` | none | Returns the whole board in one request. **Structured pay ranges** come only from the single-job endpoint `GET .../jobs/{id}?pay_transparency=true` (field `pay_input_ranges`). Call it only for *new* postings, with a per-run cap; the range text often appears inside `content` too. EU-hosted boards exist (`job-boards.eu.greenhouse.io`), so check their API host. |
+| greenhouse | `GET https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true` | none | Returns the whole board in one request. **Structured pay ranges** come only from the single-job endpoint `GET .../jobs/{id}?pay_transparency=true` (field `pay_input_ranges`). Call it for open postings with no successful lookup yet, newest first, up to a daily cap, so a backlog drains over time. Each posting is looked up once. The range text sometimes appears inside `content` too. EU-hosted boards exist (`job-boards.eu.greenhouse.io`), so check their API host. |
 | lever | `GET https://api.lever.co/v0/postings/{slug}?mode=json` | none | Has a structured `salaryRange` when the employer publishes one. Check the EU host (`api.eu.lever.co`). |
 | ashby | `GET https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true` | none | Compensation is included when published. |
 | workable | `GET https://www.workable.com/api/accounts/{slug}?details=true` | none | Optional, after Milestone 4. Documented public endpoint, one response per account. |
@@ -90,6 +91,8 @@ job-insights/
 ├── CLAUDE.md
 ├── PLAN.md
 ├── README.md
+├── docs/glossary.md             # plain-language definitions of the project's terms
+├── scripts/record_fixtures.py   # records trimmed test fixtures from real boards
 ├── pyproject.toml
 ├── .env.example                 # ADZUNA_APP_ID, ADZUNA_APP_KEY, USAJOBS_API_KEY, CONTACT_EMAIL, THEMUSE_API_KEY (optional), R2_* (M6)
 ├── config/
@@ -171,7 +174,7 @@ Use `PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;` and `STRICT` tables.
 ```sql
 CREATE TABLE runs (
   run_id        INTEGER PRIMARY KEY,
-  run_date      TEXT NOT NULL,          -- UTC YYYY-MM-DD
+  run_date      TEXT NOT NULL UNIQUE,   -- UTC YYYY-MM-DD; a re-run continues the day's run
   started_at    TEXT NOT NULL,
   finished_at   TEXT,
   status        TEXT NOT NULL,          -- running | ok | partial | failed
@@ -211,9 +214,10 @@ CREATE TABLE fetches (
   started_at   TEXT NOT NULL,
   http_status  INTEGER,
   ok           INTEGER NOT NULL,            -- 1 = complete and parsed
-  item_count   INTEGER,
+  item_count   INTEGER,                     -- NULL if there's no complete response
   duration_ms  INTEGER,
-  error        TEXT
+  error        TEXT,
+  processed_at TEXT                         -- when a saved response was parsed
 ) STRICT;  -- every fetch also has an archive manifest with the same fetch_id (§5.4)
 
 CREATE TABLE descriptions (
@@ -296,9 +300,13 @@ For each board whose fetch **succeeded** this run:
 | Posting seen, open span | Update `last_seen_date` and clear `pending_absent_date`. |
 | Posting absent, `pending_absent_date` is NULL | Set `pending_absent_date = run_date`. |
 | Posting absent, `pending_absent_date` already set from an earlier successful fetch | Close the span (`close_date = pending_absent_date`). |
-| Board returns 0 jobs but had more than 20 open the run before | Record it and flag it in health checks, but **don't** apply closures this run. |
+| Board returns 0 jobs but has more than 20 open: 1st or 2nd zero-job run | **Hold:** record it and flag it in health checks, but **don't** apply closures this run. |
+| Board returns 0 jobs but has more than 20 open: 3rd zero-job run | Believe it: close them all, with `close_date` = the first zero-job date (or a posting's own earlier pending date). |
+| Response has jobs that failed to parse | Upsert the good ones and mark them seen, but mark nothing absent: a missing posting might be one of the bad ones. The fetch has `ok = 0`, while its manifest stays `ok = 1` so a fixed parser can replay it. |
 
 If the board's fetch **failed**, touch nothing.
+
+Zero-job runs are counted by distinct `run_date`. A failed fetch neither adds to the count nor resets it, and any response with jobs resets it, even if they failed to parse.
 
 The confirming absence must come from a **later `run_date`**. A same-day re-run (`--force`) never confirms a closure.
 
@@ -311,8 +319,10 @@ The archive is a separate SQLite file, which keeps the main database small. It's
 Order for each fetch:
 1. Create the `fetches` row, to get a `fetch_id`.
 2. Write the manifest and its objects.
-3. Parse and upsert.
+3. When all fetching and retries have ended, read the response back from the archive, then parse and upsert. One transaction per board covers its postings, its spans and step 4.
 4. Mark the fetch `ok`.
+
+Pay lookups (§6, step 6) are the exception: each is parsed right after it's archived.
 
 ```sql
 CREATE TABLE raw_objects (
@@ -366,12 +376,12 @@ CREATE INDEX manifests_run_date ON manifests (run_date);
 
 ## 6. The daily pipeline (`jobs daily`)
 
-1. Start a `runs` row. If a run for today already finished, exit unless `--force`.
+1. Start today's `runs` row, or continue it. Boards with a good response today aren't fetched again unless `--force`, so if nothing is left to do, exit without changing anything.
 2. **Feeds:** fetch each enabled feed, archive each response (§5.4), then upsert postings. Quota guards apply.
 3. **Discovery:** extract ATS URLs from today's feed postings and new HN comments, then validate candidates (§7, Milestone 3).
-4. **Boards:** fetch every `active` board (including newly validated ones) with per-host concurrency limits, archiving each response before parsing.
-5. **Reconcile:** apply the spans and versions rules (§5.3).
-6. **Greenhouse pay enrichment:** request detail with `pay_transparency=true` for today's new Greenhouse postings, up to a per-run cap. Detail responses are archived too.
+4. **Boards:** fetch every `active` board (including newly validated ones) with per-host concurrency limits, archiving each response. Retry only the failed ones (`collect.retries` rounds, with growing waits); 429, 5xx, network errors and malformed responses are retried, other 4xx aren't. Boards still failing are logged, and the rest carry on.
+5. **Process and reconcile:** parse the saved responses from the archive, then apply the spans and versions rules (§5.3), in one transaction per board.
+6. **Greenhouse pay enrichment:** request detail with `pay_transparency=true` for open Greenhouse postings with no successful lookup yet, newest first, up to a daily cap. A posting tried today waits until tomorrow. Failures here don't affect the run's status. Detail responses are archived too.
 7. **Build:** rebuild `jobs.duckdb` from SQLite and write Parquet exports.
 8. **Health:** run the checks (§8) and write `data/reports/run-{date}.md` and `status/latest.json`.
 9. **Housekeeping:**
@@ -423,21 +433,23 @@ Target runtime: under 30 minutes at a few thousand boards.
 - DuckDB row counts match SQLite (an `integration` test: `uv run pytest -m integration`).
 
 ### Milestone 2 — Shared HTTP client, company job-board adapters, reconcile (the core)
-- [ ] `http.py` with:
+- [x] `http.py` with:
   - per-host rate limit and concurrency
   - timeouts
   - retries with backoff and jitter on 429/5xx, honoring `Retry-After`
   - a User-Agent that includes `CONTACT_EMAIL`
-- [ ] Adapters `greenhouse`, `lever`, `ashby`, with fixtures recorded from 2–3 real boards each. Each one splits responses into items + envelope, parses from items alone and declares `PARSER_VERSION` (§5.1).
-- [ ] Parse `ats_ref` from apply and source URLs
+- [x] Adapters `greenhouse`, `lever`, `ashby`, with fixtures recorded from 2–3 real boards each. Each one splits responses into items + envelope, parses from items alone and declares `PARSER_VERSION` (§5.1).
 - [ ] `config/seeds.yaml`: 30–50 companies spread across the three systems, each verified live (a mix of big tech, scale-ups and AI startups)
-- [ ] `reconcile.py` implementing §5.3
-- [ ] Greenhouse pay enrichment (capped)
-- [ ] `jobs collect --source greenhouse|lever|ashby|boards`, which archives every response before parsing
+- [x] `reconcile.py` implementing §5.3
+- [x] Greenhouse pay enrichment (capped)
+- [x] `jobs collect --source greenhouse|lever|ashby|boards`, which archives every response before parsing, retries failed boards and processes the day as one run
 
 **Acceptance criteria:**
 - Running twice on the same day changes nothing the second time.
 - A simulated failed fetch causes no closures.
+- A failed board is retried, then processed with the rest. Boards that succeeded aren't fetched again.
+- After the configured retries, failures are logged and the rest are processed.
+- A later collection the same day picks up only what failed.
 - A job missing from 2 successful fetches closes, with the right `close_date`.
 - A job that returns gets a new span.
 - A parser that raises on one item still leaves that fetch's manifest and objects in the archive.
@@ -459,6 +471,7 @@ Target runtime: under 30 minutes at a few thousand boards.
   - `boards.greenhouse.io/embed/job_board?for={slug}`
   - `jobs.lever.co/{slug}` and `jobs.eu.lever.co/{slug}`
   - `jobs.ashbyhq.com/{slug}`
+- [ ] Parse `ats_ref` from apply and source URLs, falling back to the board's identity for board jobs, whose URLs often have no slug (`stripe.com/jobs/search?gh_jid=...`). Moved from Milestone 2, since nothing reads it until feeds arrive.
 - [ ] Validator: probe a candidate's API. A valid response makes it `active`; a 404 makes it `invalid`. A board with zero jobs is still valid.
 - [ ] `jobs discover --from-db` scans stored URLs and HN text; `jobs discover --from-file urls.txt` takes manual additions.
 - [ ] Optional: probe by company name (slug variants on each system). Results stay `candidate` until confirmed, because name collisions are common.
@@ -528,7 +541,7 @@ Target runtime: under 30 minutes at a few thousand boards.
 
 - **Item count per source:** warn when it falls below 50% of the trailing 7-run median.
 - **Board failures:** list boards with `consecutive_failures >= 3`. Mark a board `inactive` after 7 consecutive 404s; a board with zero jobs stays active.
-- **Suspicious drops:** flag any board that went from more than 20 open postings to 0 (closures are held).
+- **Suspicious drops:** flag any board that went from more than 20 open postings to 0 (closures are held until its 3rd zero-job run).
 - **Closures:** flag runs where closures exceed 30% of a board's open postings.
 - **Parse errors:** count of records that failed `PostingRecord` validation, per source.
 - **Quotas:** usage vs. budget per source.
@@ -557,7 +570,7 @@ Phase 1 must capture the fields in the **Needs** column. The **Phase 2 work** co
 | 10 | AI in non-AI roles | Share of backend, frontend and product roles mentioning LLMs or AI tooling | descriptions, title | Role family + technology dictionary |
 | 11 | Technology co-occurrence and company stacks | Pairs that appear together; top technologies per company | descriptions | Same |
 | 12 | Where are the jobs? | Top metros and countries; remote vs. hybrid vs. onsite share; remote with region limits | locations_raw, workplace_raw | Location parser |
-| 13 | What does it pay? | Share of postings with disclosed pay; ranges by role family, seniority and metro | salary_* fields, salary_raw, descriptions | Salary text parser, currency/period normalization |
+| 13 | What does it pay? | Share of postings with disclosed pay; ranges by role family, seniority and metro | salary_* fields, salary_raw, descriptions | Salary text parser (also fills gaps where a Greenhouse lookup found no range; descriptions are kept, so it can run over all history), currency/period normalization. Sales "salaries" can include commission. A pay lookup made after a posting's first day looks like a pay change on that date, so ignore a posting's first pay value when measuring changes. |
 | 14 | Market churn | New vs. closed postings per day; net change | spans | — |
 | 15 | How long do roles stay open? | Median days open by role and company; repost rate; roles open unusually long ("ghost" candidates) | spans | — |
 | 16 | Visa sponsorship | Share of postings mentioning sponsorship, positively or negatively | descriptions | Phrase rules |

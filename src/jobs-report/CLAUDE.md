@@ -55,7 +55,7 @@ Keep this list current as commands are added.
    - a User-Agent that includes the contact email from `.env`
 
    Respect each source's stated limits (for example, Remotive: at most 4 fetches a day).
-5. **No live network calls in unit tests.** Use recorded, trimmed fixtures in `tests/fixtures/<source>/`. Live checks are marked `@pytest.mark.live` and skipped by default. Tests that need real infrastructure but no job source (DuckDB) are marked `@pytest.mark.integration`, live in `tests/integration/`, and are skipped by default too; don't stub that infrastructure.
+5. **No live network calls in unit tests.** A fixture in `tests/conftest.py` fails any test that really uses the network. Use recorded, trimmed fixtures in `tests/fixtures/<source>/`. Live checks are marked `@pytest.mark.live` and skipped by default. Tests that need real infrastructure but no job source (DuckDB) are marked `@pytest.mark.integration`, live in `tests/integration/`, and are skipped by default too; don't stub that infrastructure.
 6. **Two write targets, in this order.** For every fetch, successful or not:
    1. write the raw archive entry (`data/archive.sqlite`, PLAN.md §5.4)
    2. then parse into SQLite (`data/jobs.sqlite`)

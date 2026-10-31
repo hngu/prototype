@@ -1,4 +1,5 @@
 import shutil
+import socket
 import sqlite3
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -12,6 +13,24 @@ from jobinsights.store import db
 from pipeline_world import World
 
 PROJECT_ROOT = Path(__file__).parent.parent
+
+
+class RealNetworkError(BaseException):
+    """A test reached for the network. A BaseException, so no error handling can swallow it."""
+
+
+@pytest.fixture(autouse=True)
+def no_real_network(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail any test that really uses the network, unless it's marked live (CLAUDE.md rule 5)."""
+    if "live" in request.keywords:
+        return
+
+    def refuse(*args: Any, **kwargs: Any) -> None:
+        raise RealNetworkError(f"a test tried to connect: {args[:2]}; mock it or mark it live")
+
+    monkeypatch.setattr(socket, "getaddrinfo", refuse)
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    monkeypatch.setattr(socket.socket, "connect_ex", refuse)
 
 
 @pytest.fixture

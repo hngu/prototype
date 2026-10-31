@@ -87,6 +87,7 @@ def collect_project(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("CONTACT_EMAIL", "jobs@acme.test")
     assert runner.invoke(app, ["db", "init"]).exit_code == 0
     set_pay_cap(project_dir, 0)  # pay lookups have their own test below
+    write_seeds(project_dir)  # the real seeds would call real boards; tests choose their own
     return project_dir
 
 

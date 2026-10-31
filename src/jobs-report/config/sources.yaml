@@ -64,11 +64,10 @@ sources:
       doesn't repeat the salaryRange numbers. An unknown slug returns 404.
     doc_url: https://github.com/lever/postings-api
     verified_at: "2026-10-29"
-    unverified:
-      - Whether an unpaginated request always returns the whole board (no max `limit`
-        stated). Palantir (about 300 jobs) came back whole on 2026-10-30, with `skip` past
-        the end returning 0 and `limit=5000` returning the same count; recheck on the largest
-        seed board in Milestone 2.
+    # Checked 2026-10-31 on the largest seed, Shield AI (655 jobs): an unpaginated request,
+    # limit=5000 and paging 200 at a time all returned the same jobs, and `skip` past the end
+    # returned none. `uv run pytest -m live` repeats the check.
+    unverified: []
     hash_exclude: []
 
   ashby:
