@@ -1,0 +1,233 @@
+{
+  "jobs": [
+    {
+      "absolute_url": "https://careers.airbnb.com/positions/8306554?gh_jid=8306554",
+      "ai_disclaimer": null,
+      "ai_opt_out_request_url": null,
+      "application_deadline": null,
+      "company_name": "Airbnb",
+      "content": "&lt;div class=&quot;content-intro&quot;&gt;&lt;p&gt;&lt;span style=&quot;font-family: helvetica, arial, sans-serif; font-size: 12pt;&quot;&gt;Airbnb was born in 2007 when two hosts welcomed three guests to their San Francisco home, and has since grown to over 5 million hosts who have welcomed over 2 billion guest arrivals in almost every country across the globe. Every day, hosts offer unique stays and experiences that make it possible for guests to connect with communities in a more authentic way.&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;&lt;p&gt;&lt;span style=&quot;font-family: arial, helvetica, sans-serif; color: #000000;&quot;&gt;&lt;strong&gt;The Community You Will Join:&amp;nbsp;&lt;/strong&gt;&lt;/span&gt;&lt;/p&gt;\n&lt;p&gt;The AirCover team is charged with ideating, building, launching, and managing the AirCover business inside of Airbnb. We have a huge responsibility to our community of Hosts and Guests to be there when things don’t go exactly as planned with their reservations. We have a lot of work to do in the coming years and we are looking for someone who will help us manage all of the things that need to be done to deliver best-in-class services to our community.&lt;/p&gt",
+      "data_compliance": [
+        {
+          "demographic_data_consent_applies": false,
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "type": "gdpr"
+        }
+      ],
+      "departments": [
+        {
+          "child_ids": [],
+          "id": 249,
+          "name": "Community Support",
+          "parent_id": 73698
+        }
+      ],
+      "education": "education_required",
+      "first_published": "2026-10-28T10:52:05-04:00",
+      "id": 8306554,
+      "include_ai_disclaimer": null,
+      "internal_job_id": 3591434,
+      "language": "en",
+      "location": {
+        "name": "Canada"
+      },
+      "metadata": [
+        {
+          "id": 9245691,
+          "name": "Is this job part of ACC?",
+          "value": false,
+          "value_type": "yes_no"
+        },
+        {
+          "id": 10216612,
+          "name": "Workplace Type",
+          "value": "Remote",
+          "value_type": "single_select"
+        }
+      ],
+      "offices": [
+        {
+          "child_ids": [
+            1170,
+            23350
+          ],
+          "id": 64283,
+          "location": null,
+          "name": "Canada",
+          "parent_id": 17515
+        }
+      ],
+      "requisition_id": "ONE",
+      "title": "AirCover Specialist, Claims Experience",
+      "updated_at": "2026-10-28T10:52:05-04:00"
+    },
+    {
+      "absolute_url": "https://careers.airbnb.com/positions/7789554?gh_jid=7789554",
+      "ai_disclaimer": null,
+      "ai_opt_out_request_url": null,
+      "application_deadline": null,
+      "company_name": "Airbnb",
+      "content": "&lt;div class=&quot;content-intro&quot;&gt;&lt;p&gt;&lt;span style=&quot;font-family: helvetica, arial, sans-serif; font-size: 12pt;&quot;&gt;Airbnb was born in 2007 when two hosts welcomed three guests to their San Francisco home, and has since grown to over 5 million hosts who have welcomed over 2 billion guest arrivals in almost every country across the globe. Every day, hosts offer unique stays and experiences that make it possible for guests to connect with communities in a more authentic way.&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;&lt;p&gt;&lt;span style=&quot;font-family: arial, helvetica, sans-serif; color: #000000;&quot;&gt;&lt;strong&gt;The Community You Will Join:&amp;nbsp;&lt;/strong&gt;&lt;/span&gt;&lt;/p&gt;\n&lt;p&gt;&lt;span style=&quot;font-family: arial, helvetica, sans-serif; color: #000000;&quot;&gt;Airbnb’s Legal team embodies the company’s innovative, forward-thinking spirit. At the frontier of the sharing economy, Airbnb is breaking new ground in matters of policy, law, and government relations. Where some see obstacles, we see the opportunity to find creative, practical solutions, right at the cutting edge. Our adventurous, fast-moving legal team is committed to b",
+      "data_compliance": [
+        {
+          "demographic_data_consent_applies": false,
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "type": "gdpr"
+        }
+      ],
+      "departments": [
+        {
+          "child_ids": [],
+          "id": 253,
+          "name": "Legal",
+          "parent_id": 73696
+        }
+      ],
+      "first_published": "2026-04-13T04:49:05-04:00",
+      "id": 7789554,
+      "include_ai_disclaimer": null,
+      "internal_job_id": 3407102,
+      "language": "en",
+      "location": {
+        "name": "Tokyo, Japan"
+      },
+      "metadata": [
+        {
+          "id": 9245691,
+          "name": "Is this job part of ACC?",
+          "value": false,
+          "value_type": "yes_no"
+        },
+        {
+          "id": 10216612,
+          "name": "Workplace Type",
+          "value": "Hybrid",
+          "value_type": "single_select"
+        }
+      ],
+      "offices": [
+        {
+          "child_ids": [],
+          "id": 625,
+          "location": "Tokyo, Japan",
+          "name": "Tokyo, Japan",
+          "parent_id": 64274
+        }
+      ],
+      "requisition_id": "ONE",
+      "title": "Associate Legal Counsel, Japan",
+      "updated_at": "2026-09-29T20:00:54-04:00"
+    },
+    {
+      "absolute_url": "https://careers.airbnb.com/positions/8231416?gh_jid=8231416",
+      "ai_disclaimer": null,
+      "ai_opt_out_request_url": null,
+      "application_deadline": null,
+      "company_name": "Airbnb",
+      "content": "&lt;div class=&quot;content-intro&quot;&gt;&lt;p&gt;&lt;span style=&quot;font-family: helvetica, arial, sans-serif; font-size: 12pt;&quot;&gt;Airbnb was born in 2007 when two hosts welcomed three guests to their San Francisco home, and has since grown to over 5 million hosts who have welcomed over 2 billion guest arrivals in almost every country across the globe. Every day, hosts offer unique stays and experiences that make it possible for guests to connect with communities in a more authentic way.&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;&lt;p&gt;&lt;span style=&quot;font-family: arial, helvetica, sans-serif; color: #000000;&quot;&gt;&lt;strong&gt;The Community You Will Join:&amp;nbsp;&lt;/strong&gt;&lt;/span&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;The Procurement team at Airbnb manages the source-to-pay processes including Accounts Payable, Travel and Expense, and the Contingent Workforce program. Procurement Innovation is a pillar within Procurement overseeing procurement tools, processes, reporting, and AI.&amp;nbsp;&lt;/li&gt;\n&lt;li&gt;We are a collaborative, forward-thinking team that embraces an AI-first mindset — leveraging technology, automation, and data to simplify processes and un",
+      "data_compliance": [
+        {
+          "demographic_data_consent_applies": false,
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "type": "gdpr"
+        }
+      ],
+      "departments": [
+        {
+          "child_ids": [],
+          "id": 76,
+          "name": "Financial Planning and Analysis",
+          "parent_id": 73694
+        }
+      ],
+      "first_published": "2026-09-24T18:17:39-04:00",
+      "id": 8231416,
+      "include_ai_disclaimer": null,
+      "internal_job_id": 3562002,
+      "language": "en",
+      "location": {
+        "name": "United States "
+      },
+      "metadata": [
+        {
+          "id": 9245691,
+          "name": "Is this job part of ACC?",
+          "value": false,
+          "value_type": "yes_no"
+        },
+        {
+          "id": 10216612,
+          "name": "Workplace Type",
+          "value": "Remote",
+          "value_type": "single_select"
+        }
+      ],
+      "offices": [
+        {
+          "child_ids": [
+            246412,
+            258081,
+            258082,
+            258083,
+            87306,
+            87309,
+            211524,
+            87312,
+            87316,
+            87315,
+            104152,
+            88158,
+            85791,
+            87313,
+            88161,
+            87308,
+            87311,
+            87307,
+            80804,
+            109320,
+            87314,
+            88160,
+            78632,
+            87310,
+            88159,
+            241531,
+            108489,
+            62810,
+            62444,
+            85003,
+            104153,
+            12964,
+            11235,
+            55,
+            4447,
+            5924,
+            1316,
+            162,
+            5925,
+            1086,
+            1355
+          ],
+          "id": 63868,
+          "location": null,
+          "name": "United States",
+          "parent_id": 17515
+        }
+      ],
+      "requisition_id": "ONE",
+      "title": "Associate Principal, Procurement Innovation Supplier Programs",
+      "updated_at": "2026-09-29T20:00:54-04:00"
+    }
+  ],
+  "meta": {
+    "total": 3
+  }
+}

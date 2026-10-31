@@ -38,6 +38,7 @@ Keep this list current as commands are added.
 - `uv run pytest -m live`: opt-in live smoke tests (the default pytest config deselects `live`; passing `-m live` overrides it)
 - `uv run pytest -m integration`: opt-in tests that need real infrastructure but call no job source (DuckDB and its sqlite extension, downloaded once to `~/.duckdb`)
 - `uv run ruff check . && uv run ruff format .`
+- `uv run python scripts/record_fixtures.py <source> <slug>... [--jobs N]`: record trimmed test fixtures from real boards; needs `CONTACT_EMAIL`, and checks that every job on the board parses
 
 ## Hard rules
 

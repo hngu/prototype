@@ -1,0 +1,193 @@
+{
+  "jobs": [
+    {
+      "absolute_url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8805655002",
+      "ai_disclaimer": null,
+      "ai_opt_out_request_url": null,
+      "application_deadline": null,
+      "company_name": "Databricks",
+      "content": "&lt;p&gt;Req ID: CSQ427R266&lt;br&gt;Location: Tokyo, Japan&lt;/p&gt;\n&lt;p&gt;Databricksは、お客様がAIプラットフォームを活用して、世界で最も難しいなデータに関する課題を解決できるよう支援することをミッションとしています。デリバリーソリューションアーキテクト（DSA）は、この重要なミッションにおいて、セールスおよびフィールド・エンジニアリングチームと協力し、お客様のDatabricksプラットフォームの導入と利用拡大を加速させる重要な役割を担います。DSAとして、お客様がすでに導入を決定したDatabricksのワークロードについて、お客様がプラットフォームから最大限の価値と投資対効果を得られるよう、技術的な指導とサポートを提供し、お客様の成功を確実にします。特に、複雑な課題を抱えるお客様に対して、より重点的かつ技術的な責任を持って支援を行います。&lt;br&gt;このポジションは、技術とビジネスの両面を兼ね備えたハイブリッドな役割です。担当するお客様とユースケースにおいて、成長を推進します。ビジネス面では、お客様の意思決定者と関係を構築し、他の専門チームと連携しながら、Databricksが実行できる計画や戦略を策定・推進します。技術面ではDatabricksの全製品における、お客様導入後の技術的なリーダーとなります。組織内のあらゆるレベルの人々と、技術的な専門知識を活かしてコミュニケーションをとる能力が求められます。&lt;/p&gt;\n&lt;p&gt;あなたがもたらす影響 :&amp;nbsp;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;戦略的アカウントにおける複雑なユースケースおよび複数のワークストリーム全体で、技術的な実行戦略を定義し、影響を与える。&lt;/li&gt;\n&lt;li&gt;お客様のテクニカルリードやアーキテクトにとって信頼される技術アドバイザーとなり、アーキテクチャの議論をリードし、技術的な意思決定をガイドする。&lt;/li&gt;\n&lt;li&gt;パフォーマンス、コスト、信頼性、長期的なニーズのバランスを取りながら、安全かつガバナンスの効いたスケーラブルなDatabricksアーキテクチャを設計する。&lt;/li&gt;\n&lt;li&gt;お客様の成果を加速させる実用的なソリューション、プロトタイプ、再利用可能な技術資産を構築・実証する。&lt;/li&gt;\n&lt;li&gt;プラットフォームの成熟度とスケーリングのニーズを予測し、セキュリティ、ガバナンス、運用の卓越性に関するベストプラクティスを確立する。&lt;/li&gt;\n&lt;li&gt;アーキテクチャに影響を与え、デリバリーの障害を取り除",
+      "data_compliance": [
+        {
+          "demographic_data_consent_applies": false,
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "type": "gdpr"
+        }
+      ],
+      "departments": [
+        {
+          "child_ids": [],
+          "id": 4001270002,
+          "name": "Delivery Solutions Architects",
+          "parent_id": 4069106002
+        }
+      ],
+      "first_published": "2026-09-16T09:11:57-04:00",
+      "id": 8805655002,
+      "include_ai_disclaimer": null,
+      "internal_job_id": 6523784002,
+      "language": "en",
+      "location": {
+        "name": "Tokyo, Japan"
+      },
+      "metadata": [
+        {
+          "id": 9740521002,
+          "name": "Company Assignment",
+          "value": "Databricks Japan K.K.",
+          "value_type": "single_select"
+        },
+        {
+          "id": 24059030002,
+          "name": "Career Page Posting Category",
+          "value": [
+            "Field Engineering"
+          ],
+          "value_type": "multi_select"
+        }
+      ],
+      "offices": [
+        {
+          "child_ids": [],
+          "id": 4056345002,
+          "location": "Remote - Japan",
+          "name": "Remote - Japan",
+          "parent_id": 4033856002
+        }
+      ],
+      "requisition_id": "CSQ427R266",
+      "title": "デリバリーソリューションアーキテクト",
+      "updated_at": "2026-10-06T07:04:54-04:00"
+    },
+    {
+      "absolute_url": "https://databricks.com/company/careers/open-positions/job?gh_jid=6918763002",
+      "ai_disclaimer": null,
+      "ai_opt_out_request_url": null,
+      "application_deadline": null,
+      "company_name": "Databricks",
+      "content": "&lt;p&gt;As an Account Executive your mission will be to help further build our India business, which is one of our fastest growing markets in APJ. The Databricks Sales Team is driving growth through strategic and innovative partnership with our customers, helping businesses thrive by solving the world&#39;s toughest problems with our solutions. You will be inspiring and guiding customers on their data journey, making organisations more collaborative and productive than ever before. You will play an important role in the business in India, with the opportunity to strategically build your territory in close partnership with the business leaders. Using your passion with technology and drive to build, you will help businesses all across India reach their full potential, through the power of Databricks Data Intelligence Platform.&lt;/p&gt;\n&lt;p&gt;You know how to sell innovation and change and can guide deals forward to compress decision cycles. You love understanding a product in-depth and are passionate about communicating its value to customers and partners. Always prospecting for new opportunities, you will close new accounts while growing our business in existing accounts.&lt;/p&",
+      "data_compliance": [
+        {
+          "demographic_data_consent_applies": false,
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "type": "gdpr"
+        }
+      ],
+      "departments": [
+        {
+          "child_ids": [],
+          "id": 4003092002,
+          "name": "Enterprise Sales",
+          "parent_id": 4001021002
+        }
+      ],
+      "first_published": "2023-12-12T05:19:55-05:00",
+      "id": 6918763002,
+      "include_ai_disclaimer": null,
+      "internal_job_id": 5632983002,
+      "language": "en",
+      "location": {
+        "name": "Bengaluru, India; Mumbai, India"
+      },
+      "metadata": [
+        {
+          "id": 9740521002,
+          "name": "Company Assignment",
+          "value": "Databricks India Private Limited",
+          "value_type": "single_select"
+        },
+        {
+          "id": 24059030002,
+          "name": "Career Page Posting Category",
+          "value": [
+            "Sales"
+          ],
+          "value_type": "multi_select"
+        }
+      ],
+      "offices": [
+        {
+          "child_ids": [],
+          "id": 4056342002,
+          "location": "Mumbai, India",
+          "name": "Mumbai, India",
+          "parent_id": 4033855002
+        }
+      ],
+      "requisition_id": "P-985",
+      "title": "Account Executive ",
+      "updated_at": "2026-09-21T13:22:12-04:00"
+    },
+    {
+      "absolute_url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8758263002",
+      "ai_disclaimer": null,
+      "ai_opt_out_request_url": null,
+      "application_deadline": null,
+      "company_name": "Databricks",
+      "content": "&lt;p&gt;SLSQ127R32&lt;/p&gt;\n&lt;p&gt;At Databricks, we empower organizations to make better decisions with data and AI. As an Commercial (Mid-Market) Account Executive, you&#39;ll partner with some of Japan&#39;s most innovative and fast-growing companies - helping them unlock the full potential of their data to scale faster and smarter. You will own an Emerging territory, a portfolio of high‑potential, under‑penetrated accounts (often SMBs and Mid-market) that are not yet covered by a dedicated account owner.&lt;/p&gt;\n&lt;p&gt;You are a strategic, growth-minded sales professional who thrives in dynamic environments. You understand how to engage with senior stakeholders, navigate complex organizations, and drive meaningful outcomes. You&#39;re comfortable managing both short-term opportunities and multi-threaded, strategic initiatives that expand our footprint and customer impact.&lt;/p&gt;\n&lt;p&gt;You will report to Sr Manager, Sales in Japan.&lt;/p&gt;\n&lt;p&gt;The impact you will have:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Develop and execute a territory plan targeting Japan’s emerging market segment - growth-stage organizations with significant data and AI ambitions.&lt;/li&gt;\n&l",
+      "data_compliance": [
+        {
+          "demographic_data_consent_applies": false,
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "type": "gdpr"
+        }
+      ],
+      "departments": [
+        {
+          "child_ids": [],
+          "id": 4003092002,
+          "name": "Enterprise Sales",
+          "parent_id": 4001021002
+        }
+      ],
+      "first_published": "2026-08-27T19:45:30-04:00",
+      "id": 8758263002,
+      "include_ai_disclaimer": null,
+      "internal_job_id": 6247958002,
+      "language": "en",
+      "location": {
+        "name": "Tokyo, Japan"
+      },
+      "metadata": [
+        {
+          "id": 9740521002,
+          "name": "Company Assignment",
+          "value": "Databricks Japan K.K.",
+          "value_type": "single_select"
+        },
+        {
+          "id": 24059030002,
+          "name": "Career Page Posting Category",
+          "value": [
+            "Sales"
+          ],
+          "value_type": "multi_select"
+        }
+      ],
+      "offices": [
+        {
+          "child_ids": [],
+          "id": 4029277002,
+          "location": "Tokyo, Japan",
+          "name": "Tokyo, Japan",
+          "parent_id": 4033856002
+        }
+      ],
+      "requisition_id": "SLSQ127R32",
+      "title": "Account Executive, Commercial - Hunter",
+      "updated_at": "2026-10-06T06:08:35-04:00"
+    }
+  ],
+  "meta": {
+    "total": 3
+  }
+}

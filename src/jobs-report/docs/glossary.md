@@ -5,6 +5,12 @@ order. When a change introduces a new term, it adds the term here too.
 
 In `PLAN.md` and code comments, **§** means "section": §5.3 is section 5.3 of `PLAN.md`.
 
+### Adapter
+
+The code that knows one [source](#source)'s format, with one module per source in
+`src/jobinsights/sources/`. It says what URL to call, splits a response into [items](#item) and an
+[envelope](#envelope), and parses an item into a [posting](#posting).
+
 ### Archive
 
 A private database (`data/archive.sqlite`) of what each source returned, saved before any parsing
@@ -53,6 +59,11 @@ missing from a feed tells us nothing, so feed jobs never [close](#closure). The 
 One recorded attempt to get a board or feed page. Each has a row in the `fetches` table and a
 [manifest](#manifest) in the archive, whether it worked or not. Quick retries inside the HTTP client
 are part of one fetch; each retry round of a [run](#run) is a new fetch.
+
+### Fixture
+
+A saved, trimmed copy of a real response in `tests/fixtures/<source>/`. Tests read fixtures instead
+of calling the network. Recorded with `scripts/record_fixtures.py`.
 
 ### Hold
 

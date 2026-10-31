@@ -20,7 +20,7 @@ sources:
   # --- Company job boards (snapshot) -------------------------------------------------
 
   greenhouse:
-    enabled: false
+    enabled: true
     kind: board
     snapshot: true
     endpoint: https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true
@@ -33,7 +33,10 @@ sources:
       GET endpoints." content=true adds description, departments and offices.
       pay_transparency=true on the single-job endpoint adds `pay_input_ranges`
       (min_cents, max_cents, currency_type, title, blurb). List response ends with
-      meta.total. No rate limits or terms of use stated.
+      meta.total. No rate limits or terms of use stated. Live checks 2026-10-30: the list
+      has no pay data; the detail response always has `pay_input_ranges`, often []. Stripe,
+      Airbnb and Databricks all use their own sites in absolute_url, with gh_jid and no
+      slug. An unknown slug returns 404.
     doc_url: https://docs.greenhouse.io/job-board.html
     verified_at: "2026-10-29"
     unverified:
