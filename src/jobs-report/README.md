@@ -11,9 +11,9 @@ open?" can be answered later.
 - **Phase 2 (later):** normalizing titles, seniority, locations, technologies and pay, then
   answering the question bank in [PLAN.md](PLAN.md#9-phase-2-question-bank).
 
-**Status:** Milestone 2 is done: `jobs collect` fetches about 50 company job boards from
-Greenhouse, Lever and Ashby, and keeps each posting's history. Scheduling it daily is next. See
-[PLAN.md](PLAN.md) for the roadmap.
+**Status:** Milestone 2.5 is running: `jobs daily` fetches about 50 company job boards from
+Greenhouse, Lever and Ashby on a local schedule, and keeps each posting's history. Finding more
+companies is next. See [PLAN.md](PLAN.md) for the roadmap.
 
 ## How it works
 
@@ -74,11 +74,39 @@ uv sync                    # create .venv and install dependencies
 cp .env.example .env       # then set CONTACT_EMAIL (and API keys as sources are enabled)
 uv run jobs --help         # list commands
 uv run jobs db init        # create data/ and both databases
-uv run jobs collect --source boards   # fetch every board and store what changed
+uv run jobs daily          # fetch every board, store what changed, rebuild DuckDB
+uv run jobs status         # did it work?
 ```
 
-Running `jobs collect` again the same day only retries the boards that failed. It exits 0 if the
-whole day is fine, 1 if some boards failed and 2 if all of them did.
+Running `jobs daily` again the same UTC day only retries the boards that failed. It exits 0 if the
+whole day is fine, 1 if some boards failed or the DuckDB rebuild did, and 2 if every board failed.
+`jobs collect --source <name>` does the collection alone, for one source or all of them.
+
+### Run it every day
+
+```sh
+uv run jobs schedule       # writes the launchd file or crontab line, and prints how to load it
+```
+
+On macOS, this generates a launchd job that fires every 4 hours, with output in
+`data/logs/daily.log`. The first firing in a UTC day does the work (7pm to 7pm in New York during
+winter). Later firings find nothing to do unless a board failed, in which case they retry it.
+
+- **The Mac was asleep:** launchd starts the missed firing on wake.
+- **The Mac was off:** the job runs when you log in.
+- **You want to run it by hand:** `uv run jobs daily` is safe at any time. If a run is already in
+  progress, it says so and stops.
+- **The Mac was off or asleep for a whole UTC day:** that day is lost, because job boards only show
+  what's open now. Milestone 6 moves the schedule to the cloud to fix this.
+- **A migration is waiting:** scheduled runs refuse to start until you run `uv run jobs db migrate`,
+  and retry at the next firing.
+- **Something stops working:** nothing alerts you yet. `uv run jobs status` warns when the last good
+  run finished more than 36 hours ago.
+- **To stop the schedule:** `launchctl bootout gui/$(id -u)/com.jobinsights.daily`.
+
+Idle sleep can't interrupt a scheduled run, but closing the lid can. The next firing picks up what's
+left. On Linux, `jobs schedule` generates a crontab line instead, and cron doesn't catch up on missed
+firings.
 
 Development:
 
@@ -108,6 +136,8 @@ and is never published.
 | `data/archive.sqlite` | Raw API responses for the last 90 days, all roles included: each job object stored once per content hash, plus a manifest per fetch |
 | `data/jobs.duckdb` | An analysis copy rebuilt from SQLite (`jobs db build-duckdb`), with plain-text descriptions and the views `v_open_postings_by_day` and `v_new_postings_by_day` |
 | `data/exports/*.parquet` | One Parquet file per table (`jobs db export`) |
+| `data/logs/daily.log` | Output of scheduled runs, as JSON lines plus a summary |
+| `data/schedule/` | The generated launchd file or crontab line |
 
 Schema changes go through numbered migrations in `src/jobinsights/store/migrations/`, run by
 `jobs db migrate`.

@@ -33,7 +33,9 @@ Keep this list current as commands are added.
 - `uv run jobs db build-duckdb`: rebuild `data/jobs.duckdb` from SQLite
 - `uv run jobs db export`: write one Parquet file per table to `data/exports/`
 - `uv run jobs collect --source greenhouse|lever|ashby|boards [--force]`: fetch company job boards, archive each response, then parse. Running it again the same day only retries boards that failed; `--force` fetches them all again
-- `uv run jobs daily`: the full daily pipeline
+- `uv run jobs daily [--force]`: collect every board, then rebuild DuckDB. Safe to run at any time; a second run the same UTC day only retries what failed, and a run that overlaps another steps aside. Milestone 5 adds the rest of the pipeline.
+- `uv run jobs status`: last run, counts per source, active and failing boards, and a warning if the last good run is over 36 hours old. Changes nothing.
+- `uv run jobs schedule [--platform macos|linux]`: write the launchd file or crontab line to `data/schedule/` and print how to load it. Loads nothing.
 - `uv run jobs reprocess --from YYYY-MM-DD --to YYYY-MM-DD`: re-parse archived data with the current parsers. It's a dry run that prints a diff by default; add `--apply` to write.
 - `uv run pytest`: unit tests, no network
 - `uv run pytest -m live`: opt-in live smoke tests (the default pytest config deselects `live`; passing `-m live` overrides it)

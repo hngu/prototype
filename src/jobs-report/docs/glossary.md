@@ -66,6 +66,11 @@ One recorded attempt to get a board or feed page. Each has a row in the `fetches
 [manifest](#manifest) in the archive, whether it worked or not. Quick retries inside the HTTP client
 are part of one fetch; each retry round of a [run](#run) is a new fetch.
 
+### Firing
+
+One time the schedule starts `jobs daily`, every 4 hours. The first firing in a [UTC day](#utc-day)
+does the work. Later ones find nothing to do, unless a board failed and needs retrying.
+
 ### Fixture
 
 A saved, trimmed copy of a real response in `tests/fixtures/<source>/`. Tests read fixtures instead
@@ -82,6 +87,12 @@ overnight. See
 
 One job in a response, exactly as the source returned it. Parsers turn one item into one
 [posting](#posting).
+
+### launchd
+
+The macOS service that starts programs on a schedule, like cron on Linux. If the Mac was asleep at a
+scheduled time, launchd starts the program when it wakes. `jobs schedule` generates its settings
+file, called a plist.
 
 ### Manifest
 
@@ -155,6 +166,12 @@ One day's collection, with one row in the `runs` table per UTC day. Running `job
 same day continues that run: boards that already succeeded aren't fetched again, and only failed
 ones are retried.
 
+### Run lock
+
+A marker that lets only one `jobs daily` or `jobs collect` work at a time. If you start one just as
+the schedule fires, the second says so and stops. The operating system releases the lock when the
+program ends, even after a crash.
+
 ### `run_date`
 
 The UTC date a [run](#run) belongs to, written `YYYY-MM-DD`.
@@ -189,6 +206,11 @@ space than a row per job per day.
 ### Upsert
 
 Insert a row, or update it if it already exists. Upserting the same job twice leaves one row.
+
+### UTC day
+
+The 24 hours a [run](#run) is filed under, whatever the local time. In New York it goes from 7pm to
+7pm during winter and 8pm to 8pm in summer, so a run at 8pm on Monday in winter is dated Tuesday.
 
 ### Zero-job run
 

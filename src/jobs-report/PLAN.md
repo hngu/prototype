@@ -114,7 +114,9 @@ job-insights/
 │   ├── role_filter.py           # which titles count as software engineering
 │   ├── reconcile.py             # spans, versions, closures
 │   ├── reprocess.py             # re-parse archived data with current parsers (§5.4)
-│   ├── pipeline.py              # `jobs daily` orchestration
+│   ├── pipeline.py              # collects the boards for one UTC day
+│   ├── run_lock.py              # keeps two collections from running at once
+│   ├── schedule.py              # generates the launchd file or cron line (M2.5)
 │   ├── health.py                # checks + run summary
 │   └── store/
 │       ├── db.py                # connection, PRAGMAs, migration runner
@@ -127,7 +129,6 @@ job-insights/
 │   ├── fixtures/<source>/...    # recorded, trimmed real responses
 │   └── test_*.py
 ├── sql/readiness.sql            # data readiness queries (§10)
-├── ops/                         # local schedule templates: cron line, launchd plist (M2.5)
 ├── .github/workflows/daily.yml  # cloud schedule (M6)
 ├── status/latest.json           # committed each cloud run (M6)
 └── data/                        # gitignored
@@ -137,6 +138,7 @@ job-insights/
     ├── exports/*.parquet
     ├── reports/run-{run_date}.md
     ├── backups/
+    ├── schedule/                # generated launchd file or cron line (contains local paths)
     └── logs/
 ```
 
@@ -468,10 +470,11 @@ Target runtime: under 30 minutes at a few thousand boards.
 - A live smoke run over the seeds completes and prints a summary.
 
 ### Milestone 2.5 — Start collecting now
-- [ ] A minimal `jobs daily`: company boards (archived), then reconcile, then build-duckdb
-- [ ] Schedule it locally once a day at a fixed UTC time: cron on Linux, launchd on macOS (generate the file and show how to load it). Log to `data/logs/`.
-- [ ] Document the catch-up path: if the machine was asleep or off, running `jobs daily` manually later the same UTC day is safe.
-- [ ] `jobs status`: last run, counts per source, and active boards
+- [x] A minimal `jobs daily`: company boards (archived), then reconcile, then build-duckdb
+- [x] Schedule it locally every 4 hours: cron on Linux, launchd on macOS (`jobs schedule` generates the file and shows how to load it). Log to `data/logs/`. Neither scheduler has a time zone setting, so a fixed UTC time isn't possible. `jobs daily` is safe to repeat, so the first firing in a UTC day does the work, later ones find nothing to do, and a failed one is retried at the next firing.
+- [x] Document the catch-up path: launchd starts a firing missed during sleep on wake and runs at login, cron doesn't catch up, and running `jobs daily` manually at any time is safe. A UTC day in which the machine is never awake is lost until Milestone 6.
+- [x] `jobs status`: last run, counts per source, and active boards
+- [x] A lock so `jobs daily` and `jobs collect` can't overlap (a manual run can start just as the schedule fires)
 
 **Acceptance criteria:** two consecutive scheduled runs are recorded in `runs`.
 
