@@ -102,11 +102,49 @@ winter). Later firings find nothing to do unless a board failed, in which case t
   and retry at the next firing.
 - **Something stops working:** nothing alerts you yet. `uv run jobs status` warns when the last good
   run finished more than 36 hours ago.
-- **To stop the schedule:** `launchctl bootout gui/$(id -u)/com.jobinsights.daily`.
 
 Idle sleep can't interrupt a scheduled run, but closing the lid can. The next firing picks up what's
 left. On Linux, `jobs schedule` generates a crontab line instead, and cron doesn't catch up on missed
 firings.
+
+#### Managing the launchd job
+
+Run these from the project root. `jobs schedule` only writes the file, so nothing is scheduled until
+you load it.
+
+```sh
+# Turn the schedule on. Loading it also starts a run straight away.
+cp data/schedule/com.jobinsights.daily.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.jobinsights.daily.plist
+
+# Check it: `state` says whether it's running now, `runs` counts its starts since
+# loading, and `last exit code` is 0 for ok, 1 for partial and 2 for failed.
+launchctl print gui/$(id -u)/com.jobinsights.daily
+
+# Start a run now, without waiting for the next firing.
+launchctl kickstart gui/$(id -u)/com.jobinsights.daily
+
+# Read what scheduled runs did.
+tail -f data/logs/daily.log
+
+# Stop the schedule until you load it again. The file stays in place, but launchd
+# loads it again at your next login, so remove it to stop for good (below).
+launchctl bootout gui/$(id -u)/com.jobinsights.daily
+
+# Stop for good.
+launchctl bootout gui/$(id -u)/com.jobinsights.daily
+rm ~/Library/LaunchAgents/com.jobinsights.daily.plist
+```
+
+To change the firing times, edit `schedule` in `config/settings.yaml`, then apply it. launchd reads
+the file only when it's loaded, so the job has to be unloaded first:
+
+```sh
+uv run jobs schedule
+launchctl bootout gui/$(id -u)/com.jobinsights.daily
+cp data/schedule/com.jobinsights.daily.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.jobinsights.daily.plist
+```
 
 Development:
 
