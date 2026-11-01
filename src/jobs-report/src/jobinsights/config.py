@@ -62,6 +62,10 @@ class ReconcileSettings(BaseModel):
     zero_job_runs_to_release: int = Field(ge=1)
 
 
+class HealthSettings(BaseModel):
+    freshness_warn_hours: float = Field(gt=0)
+
+
 class Settings(BaseModel):
     root: Path
     paths: Paths
@@ -70,6 +74,7 @@ class Settings(BaseModel):
     collect: CollectSettings
     caps: CapsSettings
     reconcile: ReconcileSettings
+    health: HealthSettings
 
     @classmethod
     def load(cls, root: Path | None = None) -> Self:

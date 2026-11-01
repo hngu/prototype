@@ -1,7 +1,9 @@
+import hashlib
 import json
 import os
 import shutil
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -38,7 +40,7 @@ def test_db_help_lists_subcommands() -> None:
 
 
 def test_stub_fails_with_message() -> None:
-    result = runner.invoke(app, ["status"])
+    result = runner.invoke(app, ["discover"])
 
     assert result.exit_code == 1
     assert "not implemented yet" in result.output
@@ -496,3 +498,146 @@ def test_a_second_run_steps_aside_while_one_is_in_progress(
     assert "Another run is in progress" in result.output
     assert route.call_count == 0
     assert duckdb_builds == []
+
+
+# --- jobs status ------------------------------------------------------------------
+
+
+def run_sql(project_dir: Path, sql: str, *params: object) -> None:
+    conn = db.connect(project_dir / "data" / "jobs.sqlite")
+    with conn:
+        conn.execute(sql, params)
+    conn.close()
+
+
+def test_status_before_init_fails_and_creates_nothing(project_dir: Path) -> None:
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 1
+    assert "run `jobs db init` first" in result.output
+    assert not (project_dir / "data").exists()
+
+
+def test_status_with_no_runs_says_so(collect_project: Path) -> None:
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0, result.output
+    assert "Last run: none yet" in result.output
+    assert "Active boards: 0" in result.output
+    assert "Open postings: 0" in result.output
+    assert "DuckDB built: never" in result.output
+    assert "WARNING" not in result.output
+
+
+def test_status_shows_a_normal_run(collect_project: Path, respx_mock: respx.MockRouter) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"), ("lever", "zoox"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    respx_mock.get(ZOOX_URL).mock(return_value=httpx.Response(200, json=[]))
+    assert runner.invoke(app, ["collect", "--source", "boards"]).exit_code == 0
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0, result.output
+    today = datetime.now(UTC).date().isoformat()
+    assert f"Last run: {today} (ok), finished just now" in result.output
+    assert "greenhouse: 1 boards ok, 0 failed; 1 new, 0 changed, 0 reposted, 0 closed" in (
+        result.output
+    )
+    assert "lever: 1 boards ok, 0 failed; 0 new" in result.output
+    assert "Active boards: 2 (greenhouse 1, lever 1)" in result.output
+    assert "Open postings: 1" in result.output
+    assert "Failing boards: none" in result.output
+    assert "WARNING" not in result.output
+
+
+def test_status_lists_failing_boards(collect_project: Path, respx_mock: respx.MockRouter) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"), ("greenhouse", "other"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    respx_mock.get(OTHER_URL).mock(return_value=httpx.Response(404))
+    runner.invoke(app, ["collect", "--source", "boards"])
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0, result.output
+    assert "(partial)" in result.output
+    assert "greenhouse: 1 boards ok, 1 failed" in result.output
+    assert "Failing boards: greenhouse/other (1 day)" in result.output
+
+
+def test_status_adds_up_a_day_of_two_collections(
+    collect_project: Path, respx_mock: respx.MockRouter
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"), ("greenhouse", "other"))
+    other_job = {"id": 2, "title": "Frontend Engineer"}
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    respx_mock.get(OTHER_URL).mock(
+        side_effect=[
+            httpx.Response(404),
+            httpx.Response(200, json={"jobs": [other_job], "meta": {"total": 1}}),
+        ]
+    )
+    runner.invoke(app, ["collect", "--source", "boards"])
+    runner.invoke(app, ["collect", "--source", "boards"])
+
+    result = runner.invoke(app, ["status"])
+
+    assert "(ok)" in result.output
+    assert "greenhouse: 2 boards ok, 0 failed; 2 new" in result.output
+    assert "Failing boards: none" in result.output
+
+
+def test_status_shows_a_run_that_never_finished(
+    collect_project: Path, respx_mock: respx.MockRouter
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    runner.invoke(app, ["collect", "--source", "boards"])
+    run_sql(collect_project, "UPDATE runs SET status = 'running', finished_at = NULL")
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0, result.output
+    assert "(running), started just now" in result.output
+    assert "WARNING: no run has collected anything" in result.output
+
+
+@pytest.mark.parametrize(("hours", "warns"), [(35.9, False), (36.1, True)])
+def test_status_warns_when_the_last_good_run_is_old(
+    hours: float, warns: bool, collect_project: Path, respx_mock: respx.MockRouter
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    runner.invoke(app, ["collect", "--source", "boards"])
+    finished = datetime.now(UTC) - timedelta(hours=hours)
+    run_sql(collect_project, "UPDATE runs SET finished_at = ?", finished.isoformat())
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0, result.output
+    assert ("WARNING: the last good run finished" in result.output) is warns
+
+
+def test_status_ignores_a_failed_run_when_judging_freshness(
+    collect_project: Path, respx_mock: respx.MockRouter
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    respx_mock.get(ACME_URL).mock(return_value=httpx.Response(404))
+    runner.invoke(app, ["collect", "--source", "boards"])
+
+    result = runner.invoke(app, ["status"])
+
+    assert "(failed)" in result.output
+    assert "WARNING: no run has collected anything" in result.output
+
+
+def test_status_changes_nothing(collect_project: Path, respx_mock: respx.MockRouter) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    runner.invoke(app, ["collect", "--source", "boards"])
+    jobs_db = collect_project / "data" / "jobs.sqlite"
+    before = hashlib.sha256(jobs_db.read_bytes()).hexdigest()
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0, result.output
+    assert hashlib.sha256(jobs_db.read_bytes()).hexdigest() == before

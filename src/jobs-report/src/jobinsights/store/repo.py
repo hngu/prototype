@@ -79,6 +79,55 @@ def last_run_finished_at(conn: sqlite3.Connection) -> datetime | None:
     return datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None
 
 
+@dataclass(frozen=True, slots=True)
+class RunRow:
+    run_id: int
+    run_date: str
+    status: str
+    started_at: datetime
+    finished_at: datetime | None
+    summary: dict[str, Any] | None
+
+
+def latest_run(conn: sqlite3.Connection) -> RunRow | None:
+    row = conn.execute(
+        "SELECT run_id, run_date, status, started_at, finished_at, summary_json FROM runs "
+        "ORDER BY run_date DESC LIMIT 1"
+    ).fetchone()
+    if row is None:
+        return None
+    return RunRow(
+        run_id=row["run_id"],
+        run_date=row["run_date"],
+        status=row["status"],
+        started_at=datetime.fromisoformat(row["started_at"]),
+        finished_at=datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None,
+        summary=json.loads(row["summary_json"]) if row["summary_json"] else None,
+    )
+
+
+def last_good_run_finished_at(conn: sqlite3.Connection) -> datetime | None:
+    """When the latest run that collected anything finished."""
+    row = conn.execute(
+        "SELECT max(finished_at) AS finished_at FROM runs WHERE status IN ('ok', 'partial')"
+    ).fetchone()
+    return datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None
+
+
+def board_results(conn: sqlite3.Connection, run_id: int) -> dict[str, tuple[int, int]]:
+    """Boards (ok, failed) per ATS in this run. A board that recovered on a retry is ok."""
+    rows = conn.execute(
+        "SELECT b.ats, count(*) AS boards, sum(f.ok) AS ok FROM ("
+        "  SELECT fetches.board_id, max(fetches.ok) AS ok FROM fetches "
+        "  JOIN boards ON boards.board_id = fetches.board_id AND boards.slug = fetches.target "
+        "  WHERE fetches.run_id = ? GROUP BY fetches.board_id"
+        ") AS f JOIN boards b ON b.board_id = f.board_id "
+        "GROUP BY b.ats ORDER BY b.ats",
+        (run_id,),
+    )
+    return {row["ats"]: (row["ok"], row["boards"] - row["ok"]) for row in rows}
+
+
 def start_fetch(
     conn: sqlite3.Connection,
     run_id: int,
@@ -253,6 +302,16 @@ def active_boards(conn: sqlite3.Connection, ats: str | None = None) -> list[Acti
         )
         for row in conn.execute(query + " ORDER BY ats, region, slug", params)
     ]
+
+
+def failing_boards(conn: sqlite3.Connection) -> dict[str, int]:
+    """Active boards whose latest fetches failed, with how many days in a row."""
+    rows = conn.execute(
+        "SELECT ats, region, slug, consecutive_failures FROM boards "
+        "WHERE status = 'active' AND consecutive_failures > 0 "
+        "ORDER BY consecutive_failures DESC, ats, region, slug"
+    )
+    return {f"{row['ats']}/{row['slug']}": row["consecutive_failures"] for row in rows}
 
 
 def record_board_success(conn: sqlite3.Connection, board_id: int, run_date: date) -> None:
@@ -560,6 +619,10 @@ def _open_span(conn: sqlite3.Connection, posting_id: int) -> sqlite3.Row | None:
         "WHERE posting_id = ? AND close_date IS NULL",
         (posting_id,),
     ).fetchone()
+
+
+def count_open_postings(conn: sqlite3.Connection) -> int:
+    return conn.execute("SELECT count(*) FROM posting_spans WHERE close_date IS NULL").fetchone()[0]
 
 
 def open_posting_ids(conn: sqlite3.Connection, board_id: int) -> set[int]:

@@ -8,12 +8,13 @@ import asyncio
 import logging
 import sqlite3
 import subprocess
+from collections import Counter, defaultdict
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Annotated, NoReturn
+from typing import Annotated, Any, NoReturn
 
 import typer
 
@@ -383,5 +384,80 @@ def reprocess(
 
 @app.command()
 def status() -> None:
-    """Show the last run, counts per source and active boards."""
-    _not_implemented("status", "2.5")
+    """Show the last run, counts per source and active boards. Changes nothing."""
+    settings = Settings.load()
+    if not settings.paths.jobs_db.exists():
+        typer.echo(f"{settings.paths.jobs_db.name} not found; run `jobs db init` first.", err=True)
+        raise typer.Exit(code=1)
+    now = datetime.now(UTC)
+    with closing(db.connect_read_only(settings.paths.jobs_db)) as conn:
+        run = repo.latest_run(conn)
+        if run is None:
+            typer.echo("Last run: none yet; run `jobs daily`.")
+        else:
+            _echo_last_run(conn, run, now)
+        boards = Counter(board.ref.ats for board in repo.active_boards(conn))
+        per_source = ", ".join(f"{ats} {count}" for ats, count in sorted(boards.items()))
+        typer.echo(f"Active boards: {boards.total()}" + (f" ({per_source})" if boards else ""))
+        typer.echo(f"Open postings: {repo.count_open_postings(conn):,}")
+        failing = repo.failing_boards(conn)
+        names = ", ".join(f"{name} ({_plural(days, 'day')})" for name, days in failing.items())
+        typer.echo(f"Failing boards: {names or 'none'}")
+        last_good = repo.last_good_run_finished_at(conn)
+    duckdb_path = settings.paths.duckdb
+    built = "never"
+    if duckdb_path.exists():
+        built = _ago(now - datetime.fromtimestamp(duckdb_path.stat().st_mtime, UTC))
+    typer.echo(f"DuckDB built: {built}")
+    if run is not None:
+        _warn_if_stale(last_good, now, settings.health.freshness_warn_hours)
+
+
+def _echo_last_run(conn: sqlite3.Connection, run: repo.RunRow, now: datetime) -> None:
+    if run.finished_at is None:
+        when = f"started {_ago(now - run.started_at)}"
+    else:
+        when = f"finished {_ago(now - run.finished_at)}"
+    typer.echo(f"Last run: {run.run_date} ({run.status}), {when}")
+    postings = _posting_counts(run.summary)
+    for source, (ok, failed) in repo.board_results(conn, run.run_id).items():
+        counts = postings[source]
+        typer.echo(
+            f"  {source}: {ok} boards ok, {failed} failed; {counts['new']:,} new, "
+            f"{counts['changed']:,} changed, {counts['reopened']:,} reposted, "
+            f"{counts['closed']:,} closed"
+        )
+
+
+def _posting_counts(summary: dict[str, Any] | None) -> defaultdict[str, Counter[str]]:
+    """Each source's posting counts, added up over the day's collections."""
+    totals: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    for collection in (summary or {}).get("collections", []):
+        for source, counts in collection["sources"].items():
+            totals[source].update(counts)
+    return totals
+
+
+def _warn_if_stale(last_good: datetime | None, now: datetime, warn_hours: float) -> None:
+    if last_good is None:
+        typer.echo("WARNING: no run has collected anything yet; run `jobs daily`.")
+    elif now - last_good > timedelta(hours=warn_hours):
+        typer.echo(
+            f"WARNING: the last good run finished {_ago(now - last_good)}; "
+            "check data/logs/daily.log and run `jobs daily`."
+        )
+
+
+def _ago(age: timedelta) -> str:
+    minutes = int(age.total_seconds() // 60)
+    if minutes < 1:
+        return "just now"
+    if minutes < 60:
+        return f"{_plural(minutes, 'minute')} ago"
+    if minutes < 48 * 60:
+        return f"{_plural(minutes // 60, 'hour')} ago"
+    return f"{_plural(minutes // (24 * 60), 'day')} ago"
+
+
+def _plural(count: int, noun: str) -> str:
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"

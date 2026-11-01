@@ -42,6 +42,13 @@ def connect(path: Path) -> sqlite3.Connection:
     return conn
 
 
+def connect_read_only(path: Path) -> sqlite3.Connection:
+    """Open a SQLite database that this connection can't change."""
+    conn = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
 def migrate(conn: sqlite3.Connection, migrations_dir: Path) -> list[str]:
     """Apply pending migrations in order and return the file names applied."""
     conn.execute(_CREATE_BOOKKEEPING)
