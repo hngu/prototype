@@ -27,7 +27,7 @@ def test_help_lists_every_command() -> None:
     result = runner.invoke(app, ["--help"])
 
     assert result.exit_code == 0
-    for command in ("db", "collect", "discover", "daily", "reprocess", "status"):
+    for command in ("db", "collect", "discover", "daily", "schedule", "reprocess", "status"):
         assert command in result.output
 
 
@@ -592,12 +592,16 @@ def test_status_shows_a_run_that_never_finished(
     write_seeds(collect_project, ("greenhouse", "acme"))
     respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
     runner.invoke(app, ["collect", "--source", "boards"])
-    run_sql(collect_project, "UPDATE runs SET status = 'running', finished_at = NULL")
+    run_sql(
+        collect_project,
+        "UPDATE runs SET status = 'running', finished_at = NULL, summary_json = NULL",
+    )
 
     result = runner.invoke(app, ["status"])
 
     assert result.exit_code == 0, result.output
     assert "(running), started just now" in result.output
+    assert "greenhouse: 1 boards ok, 0 failed\n" in result.output  # no zeros before the summary
     assert "WARNING: no run has collected anything" in result.output
 
 

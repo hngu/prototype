@@ -8,16 +8,19 @@ import asyncio
 import logging
 import sqlite3
 import subprocess
+import sys
 from collections import Counter, defaultdict
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, NoReturn
 
 import typer
 
+from jobinsights import schedule as schedule_files
 from jobinsights.config import (
     ConfigError,
     SeedBoard,
@@ -363,6 +366,42 @@ def _duckdb_is_stale(settings: Settings) -> bool:
     return datetime.fromtimestamp(settings.paths.duckdb.stat().st_mtime, UTC) < finished_at
 
 
+class SchedulePlatform(StrEnum):
+    macos = "macos"
+    linux = "linux"
+
+
+@app.command()
+def schedule(
+    platform: Annotated[
+        SchedulePlatform | None,
+        typer.Option(help="Which scheduler to generate for. Defaults to this machine."),
+    ] = None,
+) -> None:
+    """Write the schedule file for `jobs daily` and print how to load it. Loads nothing."""
+    settings = Settings.load()
+    if platform is None:
+        platform = SchedulePlatform.macos if sys.platform == "darwin" else SchedulePlatform.linux
+    settings.paths.schedule_dir.mkdir(parents=True, exist_ok=True)
+    settings.paths.logs_dir.mkdir(parents=True, exist_ok=True)
+    log_path = settings.paths.logs_dir / "daily.log"
+    times = (settings.root, log_path, settings.schedule.hours, settings.schedule.minute)
+    if platform is SchedulePlatform.macos:
+        path = settings.paths.schedule_dir / f"{schedule_files.LAUNCHD_LABEL}.plist"
+        path.write_bytes(schedule_files.launchd_plist(*times))
+        commands = schedule_files.launchd_commands(path)
+    else:
+        path = settings.paths.schedule_dir / schedule_files.CRON_FILE_NAME
+        path.write_text(schedule_files.crontab_line(*times) + "\n")
+        commands = schedule_files.cron_commands(path)
+    typer.echo(f"Wrote {path}")
+    if not schedule_files.jobs_executable(settings.root).exists():
+        typer.echo("WARNING: .venv/bin/jobs doesn't exist yet; run `uv sync` first.")
+    typer.echo("To use it:")
+    for command in commands:
+        typer.echo(f"  {command}")
+
+
 @app.command()
 def reprocess(
     from_date: Annotated[
@@ -421,12 +460,14 @@ def _echo_last_run(conn: sqlite3.Connection, run: repo.RunRow, now: datetime) ->
     typer.echo(f"Last run: {run.run_date} ({run.status}), {when}")
     postings = _posting_counts(run.summary)
     for source, (ok, failed) in repo.board_results(conn, run.run_id).items():
-        counts = postings[source]
-        typer.echo(
-            f"  {source}: {ok} boards ok, {failed} failed; {counts['new']:,} new, "
-            f"{counts['changed']:,} changed, {counts['reopened']:,} reposted, "
-            f"{counts['closed']:,} closed"
-        )
+        line = f"  {source}: {ok} boards ok, {failed} failed"
+        if run.summary is not None:  # a run writes its summary when it finishes
+            counts = postings[source]
+            line += (
+                f"; {counts['new']:,} new, {counts['changed']:,} changed, "
+                f"{counts['reopened']:,} reposted, {counts['closed']:,} closed"
+            )
+        typer.echo(line)
 
 
 def _posting_counts(summary: dict[str, Any] | None) -> defaultdict[str, Counter[str]]:

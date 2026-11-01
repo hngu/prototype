@@ -7,7 +7,7 @@ Data paths in settings.yaml are relative to the project root and are resolved he
 import os
 import re
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 import yaml
 from dotenv import dotenv_values
@@ -31,6 +31,7 @@ class Paths(BaseModel):
     reports_dir: Path
     backups_dir: Path
     logs_dir: Path
+    schedule_dir: Path
 
 
 class ArchiveSettings(BaseModel):
@@ -48,6 +49,11 @@ class HttpSettings(BaseModel):
 class CollectSettings(BaseModel):
     retries: int = Field(ge=0)  # rounds of re-fetching failed boards, per collection
     retry_backoff_seconds: float = Field(gt=0)  # wait before the first round; doubles each round
+
+
+class ScheduleSettings(BaseModel):
+    hours: list[Annotated[int, Field(ge=0, le=23)]] = Field(min_length=1)
+    minute: int = Field(ge=0, le=59)
 
 
 class CapsSettings(BaseModel):
@@ -72,6 +78,7 @@ class Settings(BaseModel):
     archive: ArchiveSettings
     http: HttpSettings
     collect: CollectSettings
+    schedule: ScheduleSettings
     caps: CapsSettings
     reconcile: ReconcileSettings
     health: HealthSettings

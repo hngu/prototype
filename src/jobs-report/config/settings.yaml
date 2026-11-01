@@ -8,6 +8,7 @@ paths:
   reports_dir: data/reports
   backups_dir: data/backups
   logs_dir: data/logs
+  schedule_dir: data/schedule
 
 archive:
   # Raw archive window (PLAN.md §5.4). Don't shorten without asking (CLAUDE.md rule 13).
@@ -32,6 +33,13 @@ collect:
   retries: 3
   # Wait before the first round; doubles each round: 30s, 1m, 2m.
   retry_backoff_seconds: 30
+
+schedule:
+  # Local times `jobs daily` fires (`jobs schedule` turns these into a launchd or cron file).
+  # It's safe to repeat, so later firings only retry failures. Minute 17 stays clear of the
+  # top of the hour, when many other scheduled jobs call these APIs.
+  hours: [0, 4, 8, 12, 16, 20]
+  minute: 17
 
 caps:
   # Greenhouse single-job requests for pay ranges, per day, newest postings first.
