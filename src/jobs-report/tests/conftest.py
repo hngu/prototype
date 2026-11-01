@@ -1,3 +1,4 @@
+import logging
 import shutil
 import socket
 import sqlite3
@@ -31,6 +32,15 @@ def no_real_network(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(socket, "getaddrinfo", refuse)
     monkeypatch.setattr(socket.socket, "connect", refuse)
     monkeypatch.setattr(socket.socket, "connect_ex", refuse)
+
+
+@pytest.fixture(autouse=True)
+def restore_logging() -> Iterator[None]:
+    """Undo `configure_logging`, whose handler points at a stream that closes with the test."""
+    root = logging.getLogger()
+    saved = root.handlers[:], root.level
+    yield
+    root.handlers[:], root.level = saved
 
 
 @pytest.fixture

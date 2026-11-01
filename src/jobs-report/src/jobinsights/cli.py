@@ -5,9 +5,12 @@ implements them. Commands run against the project in the current directory.
 """
 
 import asyncio
+import logging
 import sqlite3
 import subprocess
-from contextlib import closing
+from collections.abc import Iterator
+from contextlib import closing, contextmanager
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Annotated, NoReturn
@@ -16,6 +19,7 @@ import typer
 
 from jobinsights.config import (
     ConfigError,
+    SeedBoard,
     Settings,
     SourceConfig,
     load_contact_email,
@@ -25,10 +29,13 @@ from jobinsights.config import (
 from jobinsights.http import PoliteClient, host_limits
 from jobinsights.log import configure_logging
 from jobinsights.pipeline import CollectResult, collect_boards, sync_seeds
+from jobinsights.run_lock import RunInProgress, hold_run_lock
 from jobinsights.sources import BOARD_ADAPTERS
 from jobinsights.sources.base import BoardAdapter
-from jobinsights.store import db
+from jobinsights.store import db, repo
 from jobinsights.store.repo import RunStatus
+
+logger = logging.getLogger(__name__)
 
 RUN_DATE_FORMAT = "%Y-%m-%d"
 _EXIT_CODES: dict[RunStatus, int] = {"ok": 0, "partial": 1, "failed": 2}
@@ -98,17 +105,21 @@ def db_build_duckdb() -> None:
     """Rebuild data/jobs.duckdb from SQLite."""
     import duckdb  # deferred: only these commands need it
 
-    from jobinsights.store.duckdb_build import build_duckdb
-
     settings = Settings.load()
     if not settings.paths.jobs_db.exists():
         typer.echo(f"{settings.paths.jobs_db.name} not found; run `jobs db init` first.", err=True)
         raise typer.Exit(code=1)
     try:
-        counts = build_duckdb(settings.paths.jobs_db, settings.paths.duckdb)
+        _rebuild_duckdb(settings)
     except duckdb.Error as exc:
         typer.echo(f"DuckDB build failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc
+
+
+def _rebuild_duckdb(settings: Settings) -> None:
+    from jobinsights.store.duckdb_build import build_duckdb  # deferred, like duckdb itself
+
+    counts = build_duckdb(settings.paths.jobs_db, settings.paths.duckdb)
     typer.echo(f"{settings.paths.duckdb.name}: rebuilt {len(counts)} tables")
     _echo_counts(counts)
 
@@ -143,6 +154,24 @@ def collect(
     Running it again the same day only retries the boards that failed.
     """
     settings = Settings.load()
+    plan = _plan_collection(settings, source)
+    with _exclusive_run(settings):
+        result = _collect(plan, force)
+    _echo_collection(result)
+    raise typer.Exit(code=_EXIT_CODES[result.status])
+
+
+@dataclass(frozen=True, slots=True)
+class _CollectionPlan:
+    settings: Settings
+    sources: dict[str, SourceConfig]
+    adapters: dict[str, BoardAdapter]
+    contact_email: str
+    seeds: list[SeedBoard]
+
+
+def _plan_collection(settings: Settings, source: str) -> _CollectionPlan:
+    """Check that a collection can start, and exit with a message if it can't."""
     sources = load_sources(settings.root)
     adapters = _adapters_for(source, sources)
     missing = [p for p in (settings.paths.jobs_db, settings.paths.archive_db) if not p.exists()]
@@ -156,7 +185,22 @@ def collect(
     except ConfigError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from exc
+    return _CollectionPlan(settings, sources, adapters, contact_email, seeds)
 
+
+@contextmanager
+def _exclusive_run(settings: Settings) -> Iterator[None]:
+    """Run the block unless another collection is running, in which case exit 0."""
+    try:
+        with hold_run_lock(settings.paths.jobs_db.parent / ".run.lock"):
+            yield
+    except RunInProgress:
+        typer.echo("Another run is in progress, so this one did nothing.")
+        raise typer.Exit(code=0) from None
+
+
+def _collect(plan: _CollectionPlan, force: bool) -> CollectResult:
+    settings = plan.settings
     configure_logging()
     run_date = datetime.now(UTC).date()
     with (
@@ -172,14 +216,8 @@ def collect(
                 f"Pending migrations ({', '.join(pending)}); run `jobs db migrate` first.", err=True
             )
             raise typer.Exit(code=1)
-        sync_seeds(jobs_conn, seeds, run_date)
-        result = asyncio.run(
-            _run_collection(
-                jobs_conn, archive_conn, settings, sources, adapters, contact_email, run_date, force
-            )
-        )
-    _echo_collection(result)
-    raise typer.Exit(code=_EXIT_CODES[result.status])
+        sync_seeds(jobs_conn, plan.seeds, run_date)
+        return asyncio.run(_run_collection(jobs_conn, archive_conn, plan, run_date, force))
 
 
 def _adapters_for(source: str, sources: dict[str, SourceConfig]) -> dict[str, BoardAdapter]:
@@ -201,22 +239,19 @@ def _adapters_for(source: str, sources: dict[str, SourceConfig]) -> dict[str, Bo
 async def _run_collection(
     jobs_conn: sqlite3.Connection,
     archive_conn: sqlite3.Connection,
-    settings: Settings,
-    sources: dict[str, SourceConfig],
-    adapters: dict[str, BoardAdapter],
-    contact_email: str,
+    plan: _CollectionPlan,
     run_date: date,
     force: bool,
 ) -> CollectResult:
-    limits = host_limits(sources[name] for name in adapters)
-    async with PoliteClient(settings.http, contact_email, limits) as client:
+    limits = host_limits(plan.sources[name] for name in plan.adapters)
+    async with PoliteClient(plan.settings.http, plan.contact_email, limits) as client:
         return await collect_boards(
             jobs_conn=jobs_conn,
             archive_conn=archive_conn,
             client=client,
-            adapters=adapters,
-            sources=sources,
-            settings=settings,
+            adapters=plan.adapters,
+            sources=plan.sources,
+            settings=plan.settings,
             run_date=run_date,
             now=lambda: datetime.now(UTC),
             force=force,
@@ -282,11 +317,49 @@ def discover(
 @app.command()
 def daily(
     force: Annotated[
-        bool, typer.Option("--force", help="Run again even if today's run already finished.")
+        bool, typer.Option("--force", help="Fetch every board again, even if already done today.")
     ] = False,
 ) -> None:
-    """Run the full daily pipeline."""
-    _not_implemented("daily", "2.5")
+    """Collect every company job board, then rebuild DuckDB.
+
+    Safe to run at any time: running it again the same UTC day only retries what failed.
+    """
+    settings = Settings.load()
+    plan = _plan_collection(settings, "boards")
+    with _exclusive_run(settings):
+        result = _collect(plan, force)
+        _echo_collection(result)
+        built = _refresh_duckdb(settings, result)
+    code = _EXIT_CODES[result.status]
+    raise typer.Exit(code=code if built else max(code, 1))
+
+
+def _refresh_duckdb(settings: Settings, result: CollectResult) -> bool:
+    """Rebuild DuckDB if it's behind SQLite. Returns False if the rebuild failed.
+
+    The collected data is safe in SQLite, so a failure here is reported and the next
+    run tries again.
+    """
+    if result.nothing_to_do and not _duckdb_is_stale(settings):
+        return True
+    try:
+        _rebuild_duckdb(settings)
+    except Exception as exc:
+        logger.exception("DuckDB build failed", extra={"run_date": result.run_date})
+        typer.echo(f"DuckDB build failed: {exc}", err=True)
+        return False
+    return True
+
+
+def _duckdb_is_stale(settings: Settings) -> bool:
+    """Whether a run has finished since DuckDB was last built."""
+    with closing(db.connect(settings.paths.jobs_db)) as conn:
+        finished_at = repo.last_run_finished_at(conn)
+    if finished_at is None:
+        return False
+    if not settings.paths.duckdb.exists():
+        return True
+    return datetime.fromtimestamp(settings.paths.duckdb.stat().st_mtime, UTC) < finished_at
 
 
 @app.command()

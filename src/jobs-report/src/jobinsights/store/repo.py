@@ -74,6 +74,11 @@ def finish_run(
     )
 
 
+def last_run_finished_at(conn: sqlite3.Connection) -> datetime | None:
+    row = conn.execute("SELECT max(finished_at) AS finished_at FROM runs").fetchone()
+    return datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None
+
+
 def start_fetch(
     conn: sqlite3.Connection,
     run_id: int,

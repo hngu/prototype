@@ -1,7 +1,7 @@
 import json
-import logging
+import os
 import shutil
-from collections.abc import Iterator
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
@@ -11,6 +11,7 @@ import yaml
 from typer.testing import CliRunner
 
 from jobinsights.cli import app
+from jobinsights.run_lock import hold_run_lock
 from jobinsights.store import db
 
 runner = CliRunner()
@@ -71,14 +72,6 @@ def test_db_migrate_before_init_fails(project_dir: Path) -> None:
 
 
 # --- jobs collect -----------------------------------------------------------------
-
-
-@pytest.fixture(autouse=True)
-def restore_logging() -> Iterator[None]:
-    root = logging.getLogger()
-    saved = root.handlers[:], root.level
-    yield
-    root.handlers[:], root.level = saved
 
 
 @pytest.fixture
@@ -289,3 +282,217 @@ def test_collect_looks_up_pay_and_reports_it(
 
     assert result.exit_code == 0, result.output
     assert "1 pay lookups: 1 found pay, 0 failed" in result.output
+
+
+# --- jobs daily -------------------------------------------------------------------
+
+
+@pytest.fixture
+def duckdb_builds(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    """Record DuckDB builds instead of running them; tests/integration runs the real one."""
+    builds: list[Path] = []
+
+    def fake_build(sqlite_path: Path, duckdb_path: Path) -> dict[str, int]:
+        duckdb_path.touch()
+        builds.append(duckdb_path)
+        return {"postings": 1}
+
+    monkeypatch.setattr("jobinsights.store.duckdb_build.build_duckdb", fake_build)
+    return builds
+
+
+def run_status(project_dir: Path) -> str:
+    conn = db.connect(project_dir / "data" / "jobs.sqlite")
+    try:
+        return conn.execute("SELECT status FROM runs").fetchone()["status"]
+    finally:
+        conn.close()
+
+
+def test_daily_collects_then_builds_duckdb(
+    collect_project: Path, respx_mock: respx.MockRouter, duckdb_builds: list[Path]
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    route = respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 0, result.output
+    assert route.call_count == 1
+    assert ": ok" in result.output
+    assert "jobs.duckdb: rebuilt 1 tables" in result.output
+    assert duckdb_builds == [collect_project / "data" / "jobs.duckdb"]
+
+
+def test_daily_covers_every_enabled_board_source(
+    collect_project: Path, respx_mock: respx.MockRouter, duckdb_builds: list[Path]
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"), ("lever", "zoox"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    respx_mock.get(ZOOX_URL).mock(return_value=httpx.Response(200, json=[]))
+
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 0, result.output
+    assert "greenhouse: 1 boards ok" in result.output
+    assert "lever: 1 boards ok" in result.output
+
+
+def test_daily_again_makes_no_requests_and_does_not_rebuild(
+    collect_project: Path, respx_mock: respx.MockRouter, duckdb_builds: list[Path]
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    route = respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    runner.invoke(app, ["daily"])
+
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 0, result.output
+    assert "nothing to do" in result.output
+    assert route.call_count == 1
+    assert len(duckdb_builds) == 1
+
+
+def test_daily_rebuilds_when_the_last_build_failed(
+    collect_project: Path,
+    respx_mock: respx.MockRouter,
+    duckdb_builds: list[Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    route = respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    working_build = _replace_build_with_failure(monkeypatch)
+
+    failed = runner.invoke(app, ["daily"])
+    monkeypatch.setattr("jobinsights.store.duckdb_build.build_duckdb", working_build)
+    retried = runner.invoke(app, ["daily"])
+
+    assert failed.exit_code == 1
+    assert "DuckDB build failed: disk full" in failed.output
+    assert run_status(collect_project) == "ok"  # the collected data is safe
+    assert retried.exit_code == 0, retried.output
+    assert route.call_count == 1
+    assert len(duckdb_builds) == 1
+
+
+def _replace_build_with_failure(monkeypatch: pytest.MonkeyPatch) -> Callable[..., dict[str, int]]:
+    """Make the DuckDB build fail, and return the one it replaced."""
+    from jobinsights.store import duckdb_build
+
+    working_build = duckdb_build.build_duckdb
+
+    def failing_build(sqlite_path: Path, duckdb_path: Path) -> dict[str, int]:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(duckdb_build, "build_duckdb", failing_build)
+    return working_build
+
+
+def test_daily_rebuilds_when_duckdb_is_older_than_the_last_run(
+    collect_project: Path, respx_mock: respx.MockRouter, duckdb_builds: list[Path]
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    runner.invoke(app, ["daily"])
+    os.utime(collect_project / "data" / "jobs.duckdb", (0, 0))
+
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 0, result.output
+    assert len(duckdb_builds) == 2
+
+
+def test_daily_with_no_boards_builds_nothing(
+    collect_project: Path, duckdb_builds: list[Path]
+) -> None:
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 0
+    assert "No active boards" in result.output
+    assert duckdb_builds == []
+
+
+def test_daily_still_builds_after_a_partial_collection(
+    collect_project: Path, respx_mock: respx.MockRouter, duckdb_builds: list[Path]
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"), ("greenhouse", "other"))
+    respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    respx_mock.get(OTHER_URL).mock(return_value=httpx.Response(404))
+
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 1
+    assert ": partial" in result.output
+    assert len(duckdb_builds) == 1
+
+
+def test_daily_exits_2_when_every_board_fails(
+    collect_project: Path, respx_mock: respx.MockRouter, duckdb_builds: list[Path]
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    respx_mock.get(ACME_URL).mock(return_value=httpx.Response(404))
+
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 2
+
+
+def test_daily_force_fetches_again(
+    collect_project: Path, respx_mock: respx.MockRouter, duckdb_builds: list[Path]
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    route = respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+    runner.invoke(app, ["daily"])
+
+    result = runner.invoke(app, ["daily", "--force"])
+
+    assert result.exit_code == 0, result.output
+    assert route.call_count == 2
+
+
+def test_daily_before_init_fails(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CONTACT_EMAIL", "jobs@acme.test")
+
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 1
+    assert "run `jobs db init` first" in result.output
+
+
+def test_daily_refuses_pending_migrations(
+    project_dir: Path, monkeypatch: pytest.MonkeyPatch, duckdb_builds: list[Path]
+) -> None:
+    monkeypatch.setenv("CONTACT_EMAIL", "jobs@acme.test")
+    runner.invoke(app, ["db", "init"])
+    (project_dir / "data" / "jobs.sqlite").unlink()
+    old_migrations = project_dir / "old_migrations"
+    old_migrations.mkdir()
+    shutil.copy(db.MIGRATIONS_DIR / "001_initial.sql", old_migrations)
+    conn = db.connect(project_dir / "data" / "jobs.sqlite")
+    db.migrate(conn, old_migrations)
+    conn.close()
+
+    result = runner.invoke(app, ["daily"])
+
+    assert result.exit_code == 1
+    assert "jobs db migrate" in result.output
+    assert duckdb_builds == []
+
+
+@pytest.mark.parametrize("command", [["daily"], ["collect", "--source", "boards"]])
+def test_a_second_run_steps_aside_while_one_is_in_progress(
+    command: list[str],
+    collect_project: Path,
+    respx_mock: respx.MockRouter,
+    duckdb_builds: list[Path],
+) -> None:
+    write_seeds(collect_project, ("greenhouse", "acme"))
+    route = respx_mock.get(ACME_URL).mock(return_value=greenhouse_ok())
+
+    with hold_run_lock(collect_project / "data" / ".run.lock"):
+        result = runner.invoke(app, command)
+
+    assert result.exit_code == 0, result.output
+    assert "Another run is in progress" in result.output
+    assert route.call_count == 0
+    assert duckdb_builds == []
