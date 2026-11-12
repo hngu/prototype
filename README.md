@@ -11,7 +11,7 @@ Apps prototyping new technologies
 
 ## Setup
 
-Node, pnpm and uv versions are pinned in `.tool-versions` (asdf). Renovate opens PRs to bump them, together with `packageManager` in `src/adonis/package.json`; after merging one, run `asdf install`.
+Node, pnpm and uv versions are pinned in `.tool-versions` (asdf); when bumping one, update `packageManager` in `src/adonis/package.json` to match and run `asdf install`.
 
 First, run `asdf install` to install the ASDF dependencies
 

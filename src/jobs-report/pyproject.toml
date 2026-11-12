@@ -32,8 +32,7 @@ build-backend = "uv_build"
 
 [tool.uv]
 # Only resolve releases that have been public for 4 days, so a compromised
-# publish is caught and pulled first. One day under Dependabot's 5-day
-# cooldown (.github/dependabot.yml), so its bumps always resolve.
+# publish is caught and pulled first.
 exclude-newer = "4 days"
 
 [tool.uv.build-backend]
